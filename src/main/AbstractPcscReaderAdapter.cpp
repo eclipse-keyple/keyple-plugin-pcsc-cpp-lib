@@ -330,16 +330,6 @@ void AbstractPcscReaderAdapter::stopWaitForCardRemoval()
     mLoopWaitCardRemoval = false;
 }
 
- void AbstractPcscReaderAdapter::waitForCardRemovalDuringProcessing()
-{
-    waitForCardRemoval();
-}
-
-void AbstractPcscReaderAdapter::stopWaitForCardRemovalDuringProcessing()
-{
-    stopWaitForCardRemoval();
-}
-
 }
 }
 }

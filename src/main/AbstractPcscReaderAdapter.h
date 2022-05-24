@@ -22,9 +22,9 @@
 #include "PcscReader.h"
 
 /* Keyple Core Plugin */
+#include "DontWaitForCardRemovalDuringProcessingSpi.h"
 #include "ObservableReaderSpi.h"
 #include "WaitForCardRemovalBlockingSpi.h"
-#include "WaitForCardRemovalDuringProcessingBlockingSpi.h"
 
 /* Keyple Core Util */
 #include "LoggerFactory.h"
@@ -49,7 +49,7 @@ class AbstractPcscReaderAdapter
 : public PcscReader,
   public ConfigurableReaderSpi,
   public ObservableReaderSpi,
-  public WaitForCardRemovalDuringProcessingBlockingSpi,
+  public DontWaitForCardRemovalDuringProcessingSpi,
   public WaitForCardRemovalBlockingSpi {
 public:
     /**
@@ -61,11 +61,11 @@ public:
      * @param pluginAdapter The reference to the parent plugin.
      * @since 2.0.0
      */
-    AbstractPcscReaderAdapter(std::shared_ptr<CardTerminal> terminal, 
+    AbstractPcscReaderAdapter(std::shared_ptr<CardTerminal> terminal,
                               std::shared_ptr<AbstractPcscPluginAdapter> pluginAdapter);
 
     /**
-     * 
+     *
      */
     virtual ~AbstractPcscReaderAdapter() = default;
 
@@ -237,34 +237,20 @@ public:
      */
     void stopWaitForCardRemoval() final;
 
-    /**
-     * {@inheritDoc}
-     *
-     * @since 2.0.0
-     */
-    void waitForCardRemovalDuringProcessing() override;
-
-    /**
-     * {@inheritDoc}
-     *
-     * @since 2.0.0
-     */
-    void stopWaitForCardRemovalDuringProcessing() override;
-
 private:
     /**
-     * 
+     *
      */
     const std::unique_ptr<Logger> mLogger =
         LoggerFactory::getLogger(typeid(AbstractPcscReaderAdapter));
 
     /**
-     * 
+     *
      */
     std::shared_ptr<CardTerminal> mTerminal;
 
     /**
-     * 
+     *
      */
     const std::string mName;
 
@@ -274,7 +260,7 @@ private:
     std::shared_ptr<AbstractPcscPluginAdapter> mPluginAdapter;
 
     /**
-     * 
+     *
      */
     bool mIsContactless;
 
@@ -284,22 +270,22 @@ private:
     bool mIsInitialized;
 
     /**
-     * 
+     *
      */
     bool mIsPhysicalChannelOpen;
 
     /**
-     * 
+     *
      */
     std::string mProtocol;
 
     /**
-     * 
+     *
      */
     bool mIsModeExclusive;
 
     /**
-     * 
+     *
      */
     DisconnectionMode mDisconnectionMode;
 
@@ -310,9 +296,9 @@ private:
      * the thread (see cancel method of the Future object)
      */
     static const long REMOVAL_LATENCY;
-     
+
     /**
-     * 
+     *
      */
     std::atomic<bool> mLoopWaitCardRemoval;
 
