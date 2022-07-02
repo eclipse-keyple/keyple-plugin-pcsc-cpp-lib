@@ -88,7 +88,7 @@ const std::vector<std::string>& CardTerminal::listTerminals()
 
     readers = (char*)calloc(len, sizeof(char));
 
-    if (!readers) {
+    if (readers == NULL) {
         /* No readers to add to list */
         return list;
     }
