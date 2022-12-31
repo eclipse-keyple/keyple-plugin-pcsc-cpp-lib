@@ -1,5 +1,5 @@
 /**************************************************************************************************
- * Copyright (c) 2021 Calypso Networks Association https://calypsonet.org/                        *
+ * Copyright (c) 2022 Calypso Networks Association https://calypsonet.org/                        *
  *                                                                                                *
  * See the NOTICE file(s) distributed with this work for additional information regarding         *
  * copyright ownership.                                                                           *
@@ -237,6 +237,41 @@ public:
      */
     void stopWaitForCardRemoval() final;
 
+    /**
+     * {@inheritDoc}
+     *
+     * C++: don't implement this since inheriting from DontWaitForCardRemovalDuringProcessingSpi
+     *      instead of WaitForCardRemovalDuringProcessingBlockingSpi.
+     *
+     * @since 2.0.0
+     */
+    //void waitForCardRemovalDuringProcessing() override;
+
+    /**
+     * {@inheritDoc}
+     *
+     * C++: don't implement this since inheriting from DontWaitForCardRemovalDuringProcessingSpi
+     *      instead of WaitForCardRemovalDuringProcessingBlockingSpi.
+     *
+     * @since 2.0.0
+     */
+    //void stopWaitForCardRemovalDuringProcessing() override;
+
+    /**
+     * {@inheritDoc}
+     *
+     * @since 2.1.0
+     */
+    const std::vector<uint8_t> transmitControlCommand(const int commandId,
+                                                      const std::vector<uint8_t>& command) override;
+
+    /**
+     * {@inheritDoc}
+     *
+     * @since 2.1.0
+     */
+    int getIoctlCcidEscapeCommandId() const override;
+
 private:
     /**
      *
@@ -258,6 +293,11 @@ private:
      *
      */
     std::shared_ptr<AbstractPcscPluginAdapter> mPluginAdapter;
+
+    /**
+     *
+     */
+    bool mIsWindows = false;
 
     /**
      *

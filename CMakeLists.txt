@@ -1,5 +1,5 @@
 # *************************************************************************************************
-# Copyright (c) 2021 Calypso Networks Association https://calypsonet.org/                         *
+# Copyright (c) 2022 Calypso Networks Association https://calypsonet.org/                         *
 #                                                                                                 *
 # See the NOTICE file(s) distributed with this work for additional information regarding          *
 # copyright ownership.                                                                            *
@@ -14,7 +14,7 @@ PROJECT(KeyplePluginPcscCppLib C CXX)
 CMAKE_MINIMUM_REQUIRED(VERSION 3.0)
 
 SET(CMAKE_PROJECT_VERSION_MAJOR "2")
-SET(CMAKE_PROJECT_VERSION_MINOR "0")
+SET(CMAKE_PROJECT_VERSION_MINOR "1")
 SET(CMAKE_PROJECT_VERSION_PATCH "0")
 
 SET(CMAKE_PROJECT_VERSION "${CMAKE_PROJECT_VERSION_MAJOR}.
@@ -42,3 +42,9 @@ SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 # Add projects
 ADD_SUBDIRECTORY(${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+# Dependencies (for later use):
+#
+# keyple-common-cpp-api:2.0.0
+# keyple-plugin-cpp-api:2.0.0
+# keyple-util-cpp-lib:2.1.0

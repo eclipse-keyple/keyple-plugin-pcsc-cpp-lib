@@ -1,5 +1,5 @@
 /**************************************************************************************************
- * Copyright (c) 2021 Calypso Networks Association https://calypsonet.org/                        *
+ * Copyright (c) 2022 Calypso Networks Association https://calypsonet.org/                        *
  *                                                                                                *
  * See the NOTICE file(s) distributed with this work for additional information regarding         *
  * copyright ownership.                                                                           *
@@ -151,6 +151,30 @@ bool CardTerminal::connect()
                            &mProtocol);
 
     return rv == SCARD_S_SUCCESS;
+}
+
+const std::vector<uint8_t> CardTerminal::transmitControlCommand(
+    const int commandId, const std::vector<uint8_t>& command)
+{
+    char r_apdu[261];
+    DWORD dwRecv = sizeof(r_apdu);
+
+    LONG rv = SCardControl(mHandle,
+                          (DWORD)commandId,
+                          (LPCBYTE)command.data(),
+                          (DWORD)command.size(),
+                          (LPBYTE)r_apdu,
+                          (DWORD)sizeof(r_apdu),
+                          &dwRecv);
+    if (rv != SCARD_S_SUCCESS) {
+        mLogger->error("SCardControl failed with error: %\n",
+                       std::string(pcsc_stringify_error(rv)));
+        throw CardTerminalException("SCardControl failed");
+    }
+
+    std::vector<uint8_t> response(r_apdu, r_apdu + dwRecv);
+
+    return response;
 }
 
 void CardTerminal::disconnect()

@@ -13,10 +13,11 @@
 #include "AbstractPcscReaderAdapter.h"
 
 /* Keyple Core Util */
-#include "ByteArrayUtil.h"
+#include "HexUtil.h"
 #include "IllegalArgumentException.h"
 #include "IllegalStateException.h"
 #include "KeypleAssert.h"
+#include "Pattern.h"
 
 /* Keyple Core Plugin */
 #include "CardIOException.h"
@@ -54,6 +55,12 @@ AbstractPcscReaderAdapter::AbstractPcscReaderAdapter(
     if (!terminal) {
         throw IllegalArgumentException("Terminal should not be null");
     }
+
+#if (defined(_WIN32) || defined(WIN32))
+    mIsWindows = true;
+#else
+    mIsWindows = false;
+#endif
 }
 
 std::shared_ptr<CardTerminal> AbstractPcscReaderAdapter::getTerminal() const
@@ -102,7 +109,7 @@ bool AbstractPcscReaderAdapter::isCurrentProtocol(const std::string& readerProto
     try {
         const std::string protocolRule = mPluginAdapter->getProtocolRule(readerProtocol);
         if (!protocolRule.empty()) {
-            const std::string atr = ByteArrayUtil::toHex(mTerminal->getATR());
+            const std::string atr = HexUtil::toHex(mTerminal->getATR());
             isCurrentProtocol = Pattern::compile(protocolRule)->matcher(atr)->matches();
         }
 
@@ -177,7 +184,7 @@ bool AbstractPcscReaderAdapter::checkCardPresence()
 
 const std::string AbstractPcscReaderAdapter::getPowerOnData() const
 {
-    return ByteArrayUtil::toHex(mTerminal->getATR());
+    return HexUtil::toHex(mTerminal->getATR());
 }
 
 const std::vector<uint8_t> AbstractPcscReaderAdapter::transmitApdu(
@@ -328,6 +335,56 @@ void AbstractPcscReaderAdapter::stopWaitForCardRemoval()
     mLogger->trace("%: stop waiting for the card removal requested\n", getName());
 
     mLoopWaitCardRemoval = false;
+}
+
+/*
+ * C++: don't implement this since inheriting from DontWaitForCardRemovalDuringProcessingSpi
+ *      instead of WaitForCardRemovalDuringProcessingBlockingSpi.
+ */
+// void AbstractPcscReaderAdapter::waitForCardRemovalDuringProcessing()
+// {
+//     waitForCardRemoval();
+// }
+
+/*
+ * C++: don't implement this since inheriting from DontWaitForCardRemovalDuringProcessingSpi
+ *      instead of WaitForCardRemovalDuringProcessingBlockingSpi.
+ */
+// void AbstractPcscReaderAdapter::stopWaitForCardRemovalDuringProcessing()
+// {
+//         stopWaitForCardRemoval();
+// }
+
+const std::vector<uint8_t> AbstractPcscReaderAdapter::transmitControlCommand(
+    const int commandId, const std::vector<uint8_t>& command)
+{
+    std::vector<uint8_t> response;
+    const int controlCode = mIsWindows ? 0x00310000 | (commandId << 2) : 0x42000000 | commandId;
+
+    try {
+        if (mTerminal != nullptr) {
+            response = mTerminal->transmitControlCommand(controlCode, command);
+
+        } else {
+            /* C++ don't do virtual cards for now... */
+            throw IllegalStateException("Reader failure.");
+
+            // std::shared_ptr<Card> virtualCard = terminal->connect("DIRECT");
+            // response = virtualCard->transmitControlCommand(controlCode, command);
+            // virtualCard->disconnect(false);
+        }
+
+    } catch (const CardException& e) {
+        throw IllegalStateException("Reader failure.",
+                                    std::make_shared<CardException>(e));
+    }
+
+    return response;
+}
+
+int AbstractPcscReaderAdapter::getIoctlCcidEscapeCommandId() const
+{
+    return mIsWindows ? 3500 : 1;
 }
 
 }
