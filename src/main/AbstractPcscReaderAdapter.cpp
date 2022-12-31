@@ -42,6 +42,7 @@ AbstractPcscReaderAdapter::AbstractPcscReaderAdapter(
 : mTerminal(terminal),
   mName(terminal ? terminal->getName() : ""),
   mPluginAdapter(pluginAdapter),
+  mIsWindows(#if (defined(_WIN32) || defined(WIN32)) true #else false),
   mIsContactless(false),
   mIsInitialized(false),
   mIsPhysicalChannelOpen(false),
@@ -328,6 +329,44 @@ void AbstractPcscReaderAdapter::stopWaitForCardRemoval()
     mLogger->trace("%: stop waiting for the card removal requested\n", getName());
 
     mLoopWaitCardRemoval = false;
+}
+
+void AbstractPcscReaderAdapter::waitForCardRemovalDuringProcessing()
+{
+    waitForCardRemoval();
+}
+
+void AbstractPcscReaderAdapter::stopWaitForCardRemovalDuringProcessing()
+{
+        stopWaitForCardRemoval();
+}
+
+const std::vector<uint8_t> AbstractPcscReaderAdapter::transmitControlCommand(
+    const int commandId, const std::vector<uint8_t>& command)
+{
+    std::vector<uint8_t> response;
+    const int controlCode = mIsWindows ? 0x00310000 | (commandId << 2) : 0x42000000 | commandId;
+
+    try {
+        if (mCard != nullptr) {
+            response = card->transmitControlCommand(controlCode, command);
+
+        } else {
+            std::shared_ptr<Card> virtualCard = terminal->connect("DIRECT");
+            response = virtualCard.->transmitControlCommand(controlCode, command);
+            virtualCard->disconnect(false);
+        }
+
+    } catch (const CardException& e) {
+        throw IllegalStateException("Reader failure.", e);
+    }
+
+    return response;
+}
+
+int AbstractPcscReaderAdapter::getIoctlCcidEscapeCommandId() const
+{
+    return mIsWindows ? 3500 : 1;
 }
 
 }

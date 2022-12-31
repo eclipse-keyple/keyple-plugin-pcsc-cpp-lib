@@ -1,5 +1,5 @@
 /**************************************************************************************************
- * Copyright (c) 2021 Calypso Networks Association https://calypsonet.org/                        *
+ * Copyright (c) 2022 Calypso Networks Association https://calypsonet.org/                        *
  *                                                                                                *
  * See the NOTICE file(s) distributed with this work for additional information regarding         *
  * copyright ownership.                                                                           *
@@ -74,7 +74,7 @@ public:
          * @since 2.0.0
          */
         static const IsoProtocol ANY;
-        
+
         /**
          * to connect using T=0 protocol
          *
@@ -115,13 +115,13 @@ public:
         const std::string& getValue() const;
 
         /**
-         * 
+         *
          */
         bool operator==(const PcscReader::IsoProtocol& ip) const;
 
     private:
         /**
-         * 
+         *
          */
         const std::string mValue;
     };
@@ -148,7 +148,7 @@ public:
     };
 
     /**
-     * 
+     *
      */
     virtual ~PcscReader() = default;
 
@@ -218,22 +218,53 @@ public:
      *
      * @param disconnectionMode The {@link DisconnectionMode} to use (must be not null).
      * @return This instance.
-     * @throws IllegalArgumentException If disconnectionMode is null
+     * @throw IllegalArgumentException If disconnectionMode is null
+     * @since 2.0.0
      */
     virtual PcscReader& setDisconnectionMode(const DisconnectionMode disconnectionMode) = 0;
 
     /**
-     * 
+     * Transmits a control command to the terminal device.
+     *
+     * <p>This can be used to access specific features of the reader such as setting parameters,
+     * controlling LEDs, a buzzer or any other proprietary function defined by the reader
+     * manufacturer.
+     *
+     * <p>The supplied command identifier is internally converted into a control code expected by the
+     * current platform. Its actual value differs if the platform is Windows.
+     *
+     * @param commandId The command identifier.
+     * @param command A not null byte array containing the command data.
+     * @return The response data.
+     * @throw IllegalStateException If the communication with the reader has failed.
+     * @since 2.1.0
+     */
+    virtual const std::vector<uint8_t> transmitControlCommand(
+        const int commandId, const std::vector<uint8_t>& command) = 0;
+
+    /**
+     * Helper method that return the PC/SC IOCTL CCID "Escape" command identifier.
+     *
+     * <p>The PC/SC IOCTL CCID "Escape" command exists for all platforms but the value of its
+     * identifier differs from one to another (3500 for Windows, 1 for linux/MacOS).
+     *
+     * @return The IOCTL CCID "Escape" command identifier adapted to the OS.
+     * @since 2.1.0
+     */
+    virtual int getIoctlCcidEscapeCommandId() const = 0;
+
+    /**
+     *
      */
     friend std::ostream& operator<<(std::ostream& os, const SharingMode sm);
 
     /**
-     * 
+     *
      */
     friend std::ostream& operator<<(std::ostream& os, const IsoProtocol& ip);
 
     /**
-     * 
+     *
      */
     friend std::ostream& operator<<(std::ostream& os, const DisconnectionMode dm);
 };
