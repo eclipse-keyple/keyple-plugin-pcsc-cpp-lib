@@ -13,7 +13,7 @@
 #include "AbstractPcscReaderAdapter.h"
 
 /* Keyple Core Util */
-#include "ByteArrayUtil.h"
+#include "HexUtil.h"
 #include "IllegalArgumentException.h"
 #include "IllegalStateException.h"
 #include "KeypleAssert.h"
@@ -103,7 +103,7 @@ bool AbstractPcscReaderAdapter::isCurrentProtocol(const std::string& readerProto
     try {
         const std::string protocolRule = mPluginAdapter->getProtocolRule(readerProtocol);
         if (!protocolRule.empty()) {
-            const std::string atr = ByteArrayUtil::toHex(mTerminal->getATR());
+            const std::string atr = HexUtil::toHex(mTerminal->getATR());
             isCurrentProtocol = Pattern::compile(protocolRule)->matcher(atr)->matches();
         }
 
@@ -178,7 +178,7 @@ bool AbstractPcscReaderAdapter::checkCardPresence()
 
 const std::string AbstractPcscReaderAdapter::getPowerOnData() const
 {
-    return ByteArrayUtil::toHex(mTerminal->getATR());
+    return HexUtil::toHex(mTerminal->getATR());
 }
 
 const std::vector<uint8_t> AbstractPcscReaderAdapter::transmitApdu(

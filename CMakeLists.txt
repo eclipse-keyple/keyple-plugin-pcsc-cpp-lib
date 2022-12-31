@@ -42,3 +42,9 @@ SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 # Add projects
 ADD_SUBDIRECTORY(${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+# Dependencies (for later use):
+#
+# keyple-common-cpp-api:2.0.0
+# keyple-plugin-cpp-api:2.0.0
+# keyple-util-cpp-lib:2.1.0
