@@ -1,5 +1,5 @@
 /**************************************************************************************************
- * Copyright (c) 2021 Calypso Networks Association https://calypsonet.org/                        *
+ * Copyright (c) 2022 Calypso Networks Association https://calypsonet.org/                        *
  *                                                                                                *
  * See the NOTICE file(s) distributed with this work for additional information regarding         *
  * copyright ownership.                                                                           *
@@ -46,6 +46,11 @@ public:
     /**
      *
      */
+    virtual ~CardTerminal() = default;
+
+    /**
+     *
+     */
     const std::string& getName() const;
 
     /**
@@ -72,6 +77,12 @@ public:
      *
      */
     const std::vector<uint8_t>& getATR();
+
+    /**
+     *
+     */
+    virtual const std::vector<uint8_t> transmitControlCommand(const int commandId,
+                                                              const std::vector<uint8_t>& command);
 
     /**
      *

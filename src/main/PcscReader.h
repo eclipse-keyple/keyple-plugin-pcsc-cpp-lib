@@ -14,6 +14,7 @@
 
 #include <ostream>
 #include <string>
+#include <vector>
 
 /* Keyple Core Common */
 #include "KeypleReaderExtension.h"

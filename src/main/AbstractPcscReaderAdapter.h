@@ -240,16 +240,22 @@ public:
     /**
      * {@inheritDoc}
      *
+     * C++: don't implement this since inheriting from DontWaitForCardRemovalDuringProcessingSpi
+     *      instead of WaitForCardRemovalDuringProcessingBlockingSpi.
+     *
      * @since 2.0.0
      */
-    void waitForCardRemovalDuringProcessing() override;
+    //void waitForCardRemovalDuringProcessing() override;
 
     /**
      * {@inheritDoc}
      *
+     * C++: don't implement this since inheriting from DontWaitForCardRemovalDuringProcessingSpi
+     *      instead of WaitForCardRemovalDuringProcessingBlockingSpi.
+     *
      * @since 2.0.0
      */
-    void stopWaitForCardRemovalDuringProcessing() override;
+    //void stopWaitForCardRemovalDuringProcessing() override;
 
     /**
      * {@inheritDoc}

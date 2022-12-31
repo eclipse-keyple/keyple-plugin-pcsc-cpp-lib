@@ -17,6 +17,7 @@
 #include "IllegalArgumentException.h"
 #include "IllegalStateException.h"
 #include "KeypleAssert.h"
+#include "Pattern.h"
 
 /* Keyple Core Plugin */
 #include "CardIOException.h"
@@ -42,7 +43,6 @@ AbstractPcscReaderAdapter::AbstractPcscReaderAdapter(
 : mTerminal(terminal),
   mName(terminal ? terminal->getName() : ""),
   mPluginAdapter(pluginAdapter),
-  mIsWindows(#if (defined(_WIN32) || defined(WIN32)) true #else false),
   mIsContactless(false),
   mIsInitialized(false),
   mIsPhysicalChannelOpen(false),
@@ -55,6 +55,12 @@ AbstractPcscReaderAdapter::AbstractPcscReaderAdapter(
     if (!terminal) {
         throw IllegalArgumentException("Terminal should not be null");
     }
+
+#if (defined(_WIN32) || defined(WIN32))
+    mIsWindows = true;
+#else
+    mIsWindows = false;
+#endif
 }
 
 std::shared_ptr<CardTerminal> AbstractPcscReaderAdapter::getTerminal() const
@@ -331,15 +337,23 @@ void AbstractPcscReaderAdapter::stopWaitForCardRemoval()
     mLoopWaitCardRemoval = false;
 }
 
-void AbstractPcscReaderAdapter::waitForCardRemovalDuringProcessing()
-{
-    waitForCardRemoval();
-}
+/*
+ * C++: don't implement this since inheriting from DontWaitForCardRemovalDuringProcessingSpi
+ *      instead of WaitForCardRemovalDuringProcessingBlockingSpi.
+ */
+// void AbstractPcscReaderAdapter::waitForCardRemovalDuringProcessing()
+// {
+//     waitForCardRemoval();
+// }
 
-void AbstractPcscReaderAdapter::stopWaitForCardRemovalDuringProcessing()
-{
-        stopWaitForCardRemoval();
-}
+/*
+ * C++: don't implement this since inheriting from DontWaitForCardRemovalDuringProcessingSpi
+ *      instead of WaitForCardRemovalDuringProcessingBlockingSpi.
+ */
+// void AbstractPcscReaderAdapter::stopWaitForCardRemovalDuringProcessing()
+// {
+//         stopWaitForCardRemoval();
+// }
 
 const std::vector<uint8_t> AbstractPcscReaderAdapter::transmitControlCommand(
     const int commandId, const std::vector<uint8_t>& command)
@@ -348,17 +362,21 @@ const std::vector<uint8_t> AbstractPcscReaderAdapter::transmitControlCommand(
     const int controlCode = mIsWindows ? 0x00310000 | (commandId << 2) : 0x42000000 | commandId;
 
     try {
-        if (mCard != nullptr) {
-            response = card->transmitControlCommand(controlCode, command);
+        if (mTerminal != nullptr) {
+            response = mTerminal->transmitControlCommand(controlCode, command);
 
         } else {
-            std::shared_ptr<Card> virtualCard = terminal->connect("DIRECT");
-            response = virtualCard.->transmitControlCommand(controlCode, command);
-            virtualCard->disconnect(false);
+            /* C++ don't do virtual cards for now... */
+            throw IllegalStateException("Reader failure.");
+
+            // std::shared_ptr<Card> virtualCard = terminal->connect("DIRECT");
+            // response = virtualCard->transmitControlCommand(controlCode, command);
+            // virtualCard->disconnect(false);
         }
 
     } catch (const CardException& e) {
-        throw IllegalStateException("Reader failure.", e);
+        throw IllegalStateException("Reader failure.",
+                                    std::make_shared<CardException>(e));
     }
 
     return response;
