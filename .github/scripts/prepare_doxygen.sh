@@ -31,11 +31,9 @@ echo "Computed all versions:"
 cat list_versions.md
 
 echo "Update project name to $project_name"
-sed -i "2s/.*/title: $project_name/" _config.yml
+# use '^' as sed separator to allow '/' in project name.
+sed -i "2s^.*^title: $project_name^" _config.yml
 
 cd ..
 
 echo "Local docs update finished."
-
-
-
