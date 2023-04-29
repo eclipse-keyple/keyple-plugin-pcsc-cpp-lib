@@ -279,6 +279,7 @@ void CardTerminal::closeAndDisconnect(const DisconnectionMode mode)
     mLogger->debug("[%] closeAndDisconnect - mode: %\n", mName, mode);
 
     SCardDisconnect(mContext, mode == DisconnectionMode::RESET ? SCARD_RESET_CARD : SCARD_LEAVE_CARD);
+    SCardDisconnect(mHandle, mode == DisconnectionMode::RESET ? SCARD_RESET_CARD : SCARD_LEAVE_CARD);
 
     releaseContext();
 }
