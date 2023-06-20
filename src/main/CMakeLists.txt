@@ -1,5 +1,5 @@
 #/*************************************************************************************************
-# * Copyright (c) 2021 Calypso Networks Association https://calypsonet.org/                       *
+# * Copyright (c) 2023 Calypso Networks Association https://calypsonet.org/                       *
 # *                                                                                               *
 # * See the NOTICE file(s) distributed with this work for additional information regarding        *
 # * copyright ownership.                                                                          *
@@ -14,47 +14,8 @@ SET(LIBRARY_NAME keyplepluginpcsccpplib)
 
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DKEYPLEPLUGINPCSC_EXPORT")
 
-SET(CALYPSONET_CARD_DIR    "../../../calypsonet-terminal-card-cpp-api")
-SET(CALYPSONET_READER_DIR  "../../../calypsonet-terminal-reader-cpp-api")
-SET(KEYPLE_COMMON_DIR      "../../../keyple-common-cpp-api")
-SET(KEYPLE_PLUGIN_DIR      "../../../keyple-plugin-cpp-api")
-SET(KEYPLE_UTIL_DIR        "../../../keyple-util-cpp-lib")
-
-SET(KEYPLE_UTIL_LIB        "keypleutilcpplib")
-
-INCLUDE_DIRECTORIES(
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_CURRENT_SOURCE_DIR}/cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/cpp/exception
-
-    ${CALYPSONET_CARD_DIR}/src/main
-    ${CALYPSONET_CARD_DIR}/src/main/spi
-
-    ${CALYPSONET_READER_DIR}/src/main
-    ${CALYPSONET_READER_DIR}/src/main/selection
-    ${CALYPSONET_READER_DIR}/src/main/selection/spi
-    ${CALYPSONET_READER_DIR}/src/main/spi
-
-    ${KEYPLE_COMMON_DIR}/src/main
-
-    ${KEYPLE_PLUGIN_DIR}/src/main
-    ${KEYPLE_PLUGIN_DIR}/src/main/spi
-    ${KEYPLE_PLUGIN_DIR}/src/main/spi/reader
-    ${KEYPLE_PLUGIN_DIR}/src/main/spi/reader/observable
-    ${KEYPLE_PLUGIN_DIR}/src/main/spi/reader/observable/state/insertion
-    ${KEYPLE_PLUGIN_DIR}/src/main/spi/reader/observable/state/processing
-    ${KEYPLE_PLUGIN_DIR}/src/main/spi/reader/observable/state/removal
-
-    ${KEYPLE_UTIL_DIR}/src/main
-    ${KEYPLE_UTIL_DIR}/src/main/cpp
-    ${KEYPLE_UTIL_DIR}/src/main/cpp/exception
-
-    ${KEYPLE_SERVICE_DIR}/src/main/cpp
-
-    /usr/include/PCSC
-)
-
 ADD_LIBRARY(
+
     ${LIBRARY_NAME}
 
     ${LIBRARY_TYPE}
@@ -69,6 +30,17 @@ ADD_LIBRARY(
     ${CMAKE_CURRENT_SOURCE_DIR}/PcscSupportedContactProtocol.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/PcscSupportedContactlessProtocol.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/cpp/CardTerminal.cpp
+)
+
+TARGET_INCLUDE_DIRECTORIES(
+
+    ${LIBRARY_NAME}
+
+    PUBLIC
+
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    cpp
+    cpp/exception
 )
 
 IF(APPLE)                                                                                           
@@ -86,4 +58,16 @@ IF(NOT PCSC)
         MESSAGE(FATAL_ERROR "PC/SC framework/library not found")                                    
 ENDIF() 
 
-TARGET_LINK_LIBRARIES(${LIBRARY_NAME} ${PCSC} ${KEYPLE_UTIL_LIB})
+TARGET_LINK_LIBRARIES(
+        
+    ${LIBRARY_NAME} 
+    
+    PUBLIC
+    
+    ${PCSC}
+    Keyple::CommonApi
+    Keyple::PluginApi
+    Keyple::Util
+)
+
+ADD_LIBRARY(Keyple::PluginPcsc ALIAS ${LIBRARY_NAME})
