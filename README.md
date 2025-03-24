@@ -10,7 +10,7 @@ The full documentation, including the **user guide**, **download information** a
 
 ## API documentation
 
-API documentation & class diagram is available online: [eclipse.github.io/keyple-plugin-pcsc-cpp-lib](https://eclipse.github.io/keyple-plugin-cpp-java-lib)
+API documentation & class diagram is available online: [docs.keyple.org/keyple-plugin-pcsc-cpp-lib](https://docs.keyple.org/keyple-plugin-cpp-java-lib)
 
 ## Examples
 
