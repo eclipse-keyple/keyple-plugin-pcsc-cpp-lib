@@ -44,6 +44,8 @@ pcsc_stringify_error(uint64_t rv)
 }
 #endif
 
+static std::shared_ptr<TerminalFactory> TerminalFactory::mInstance;
+
 std::shared_ptr<TerminalFactory>
 TerminalFactory::getDefault()
 {
