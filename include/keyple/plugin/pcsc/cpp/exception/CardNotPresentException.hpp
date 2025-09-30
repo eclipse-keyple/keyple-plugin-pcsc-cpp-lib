@@ -14,6 +14,7 @@
 #pragma once
 
 #include "keyple/core/util/cpp/exception/Exception.hpp"
+#include "keyple/plugin/pcsc/cpp/exception/CardException.hpp"
 
 namespace keyple {
 namespace plugin {
@@ -23,18 +24,20 @@ namespace exception {
 
 using keyple::core::util::cpp::exception::Exception;
 
-class CardTerminalException : public Exception {
+class CardNotPresentException : public CardException {
 public:
     /**
      *
      */
-    explicit CardTerminalException(const std::string& msg) : Exception(msg) {}
+    explicit CardNotPresentException(const std::string& msg)
+    : CardException(msg) {}
 
     /**
      *
      */
-    CardTerminalException(const std::string& msg, const Exception& cause)
-    : Exception(msg, cause) {}
+    CardNotPresentException(
+        const std::string& msg, const Exception& cause)
+    : CardException(msg, cause) {}
 };
 
 }
