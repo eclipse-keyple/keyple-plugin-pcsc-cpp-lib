@@ -33,7 +33,7 @@ public:
     /**
      *
      */
-    CardException(const std::string& msg, const std::shared_ptr<Exception> cause)
+    CardException(const std::string& msg, const Exception& cause)
     : Exception(msg, cause) {}
 };
 

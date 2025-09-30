@@ -26,6 +26,7 @@
 #include "keyple/plugin/pcsc/PcscPlugin.hpp"
 #include "keyple/plugin/pcsc/PcscReaderAdapter.hpp"
 #include "keyple/plugin/pcsc/cpp/CardTerminal.hpp"
+#include "keyple/plugin/pcsc/cpp/CardTerminals.hpp"
 
 namespace keyple {
 namespace plugin {
@@ -37,6 +38,7 @@ using keyple::core::util::cpp::Logger;
 using keyple::core::util::cpp::LoggerFactory;
 using keyple::core::util::cpp::Pattern;
 using keyple::plugin::pcsc::cpp::CardTerminal;
+using keyple::plugin::pcsc::cpp::CardTerminals;
 
 class PcscReaderAdapter;
 
@@ -133,8 +135,8 @@ public:
      * @return Null if no protocol rules defined for the provided protocol.
      * @since 2.0.0
      */
-    virtual const std::string& getProtocolRule(
-        const std::string& readerProtocol) const final;
+    const std::string& getProtocolRule(
+        const std::string& readerProtocol) const;
 
     /**
      * Attempts to determine the transmission mode of the reader whose name is
@@ -214,6 +216,11 @@ private:
      *
      */
     std::map<std::string, std::string> mProtocolRulesMap;
+
+    /**
+     *
+     */
+    std::shared_ptr<CardTerminals> mTerminals;
 
     /**
      *

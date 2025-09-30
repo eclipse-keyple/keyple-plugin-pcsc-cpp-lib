@@ -15,7 +15,7 @@
 
 #include <string>
 
- /* Keyple Plugin Pcsc */
+/* Keyple Plugin Pcsc */
 #include "keyple/plugin/pcsc/KeyplePluginPcscExport.hpp"
 
 namespace keyple {
@@ -28,6 +28,7 @@ namespace pcsc {
  * <p>TODO Improve protocol identification
  *
  * @since 2.0.0
+ * @deprecated
  */
 class KEYPLEPLUGINPCSC_API PcscSupportedContactProtocol {
 public:
@@ -86,7 +87,8 @@ private:
      * @param defaultRule The default rule.
      * @since 2.0.0
      */
-    PcscSupportedContactProtocol(const std::string& name, const std::string& defaultRule);
+    PcscSupportedContactProtocol(
+        const std::string& name, const std::string& defaultRule);
 };
 
 }

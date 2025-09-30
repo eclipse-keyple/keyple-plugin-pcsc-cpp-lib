@@ -35,15 +35,14 @@ using keyple::core::util::cpp::Pattern;
  * method PcscReader#setContactless(bool). <br>
  * A set of default protocol identification rules is also proposed.
  *
- * @see PcscSupportedContactProtocol
- * @see PcscSupportedContactlessProtocol
+ * @see PcscCardCommunicationProtocol
  * @since 2.0.0
  */
 class KEYPLEPLUGINPCSC_API PcscPluginFactoryBuilder final {
 public:
 
     /**
-     * Builder to build a {@link PcscPluginFactory}.
+     * Builder to build a PcscPluginFactory.
      *
      * @since 2.0.0
      */
