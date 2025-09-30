@@ -140,18 +140,49 @@ public:
      */
     enum class DisconnectionMode {
         /**
-         * Resets the card
+         * Resets the card. This sends a reset signal to the card while keeping
+         * the connection alive.
          *
+         * <p>Corresponds to PC/SC `SCARD_RESET_CARD`.
          * @since 2.0.0
          */
         RESET,
 
         /**
-         * Keeps the status of the card unchanged
+         * Leaves the card in its current state without performing any reset or
+         * power down.
+         *
+         * <p>Corresponds to PC/SC `SCARD_LEAVE_CARD`.
          *
          * @since 2.0.0
          */
-        LEAVE
+        LEAVE,
+
+        /**
+         * Completely powers off the card.
+         *
+         * <p>Corresponds to PC/SC `SCARD_UNPOWER_CARD`.
+         *
+         * <p>This mode is only available with the default security provider.
+         * Depending on the provider used, a runtime error may occur during
+         * eader enumeration.
+         *
+         * @since 2.5.0
+         */
+        UNPOWER,
+
+        /**
+         * Ejects the card (if supported by the reader).
+         *
+         * <p>Corresponds to PC/SC `SCARD_EJECT_CARD`.
+         *
+         * <p>This mode is only available with the default security provider.
+         * Depending on the provider used, a runtime error may occur during
+         * reader enumeration.
+         *
+         * @since 2.5.0
+         */
+        EJECT
     };
 
     /**
@@ -273,6 +304,25 @@ public:
      */
     friend std::ostream& operator<<(std::ostream& os, const DisconnectionMode dm);
 };
+
+/**
+ *
+ */
+inline std::string operator+(std::string str, const PcscReader::DisconnectionMode dm)
+{
+    switch (dm) {
+    case PcscReader::DisconnectionMode::RESET:
+        return str + "RESET";
+    case PcscReader::DisconnectionMode::LEAVE:
+        return str + "LEAVE";
+    case PcscReader::DisconnectionMode::UNPOWER:
+        return str + "UNPOWER";
+    case PcscReader::DisconnectionMode::EJECT:
+        return str + "EJECT";
+    default:
+        return str + "UNKNOWN";
+    }
+}
 
 } /* namespace pcsc */
 } /* namespace plugin */

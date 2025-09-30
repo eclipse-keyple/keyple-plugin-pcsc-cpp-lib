@@ -120,6 +120,7 @@ private:
     /**
      * Constructor
      *
+     * @param name The protocol name..
      * @param defaultRule The default rule.
      * @since 2.0.0
      */
