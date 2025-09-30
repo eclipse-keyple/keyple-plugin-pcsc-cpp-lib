@@ -24,6 +24,7 @@
 #include "keyple/core/util/cpp/LoggerFactory.hpp"
 #include "keyple/plugin/pcsc/KeyplePluginPcscExport.hpp"
 #include "keyple/plugin/pcsc/PcscReader.hpp"
+#include "keyple/plugin/pcsc/cpp/Card.hpp"
 
 namespace keyple {
 namespace plugin {
@@ -35,12 +36,16 @@ using keyple::core::util::cpp::LoggerFactory;
 
 using DisconnectionMode = PcscReader::DisconnectionMode;
 
-class KEYPLEPLUGINPCSC_API CardTerminal {
+class CardTerminals;
+
+class KEYPLEPLUGINPCSC_API CardTerminal
+: public std::enable_shared_from_this<CardTerminal> {
 public:
     /**
      *
      */
-    explicit CardTerminal(const std::string& name);
+    explicit CardTerminal(
+        std::shared_ptr<CardTerminals> cardTerminals, const std::string& name);
 
     /**
      *
@@ -48,80 +53,87 @@ public:
     virtual ~CardTerminal() = default;
 
     /**
+     * Returns the unique name of this terminal.
      *
+     * @return the unique name of this terminal.
      */
-    const std::string& getName() const;
+    const std::string&
+    getName() const;
 
     /**
+     * Returns whether a card is present in this terminal.
      *
+     * @return whether a card is present in this terminal.
+     * @throw CardException if the status could not be determined.
      */
-    bool isCardPresent(bool release);
+    bool
+    isCardPresent();
 
     /**
+     * Establishes a connection to the card. If a connection has previously
+     * established using the specified protocol, this method returns the same
+     * Card object as the previous call.
      *
+     * @param protocol The protocol to use ("T=0", "T=1", or "T=CL"), or "*" to
+     * connect using any available protocol.
+     * @throw IllegalArgumentException if protocol is an invalid protocol
+     * specification.
+     * @throw CardNotPresentException If no card is present in this terminal.
+     * @throw CardException If a connection could not be established using the
+     * specified protocol or if a connection has previously been established
+     * using a different protocol.
+     * @throw SecurityException If a SecurityManager exists and the caller does
+     * not have the required permission.
      */
-    bool isConnected();
+    std::shared_ptr<Card> connect(const std::string& protocol);
 
     /**
+     * Waits until a card is absent in this terminal or the timeout
+     * expires. If the method returns due to an expired timeout, it returns
+     * false. Otherwise it return true.
      *
+     * <P>If no card is present in this terminal when this
+     * method is called, it returns immediately.
+     *
+     * @param timeout if positive, block for up to <code>timeout</code>
+     * milliseconds; if zero, block indefinitely; must not be negative
+     * @return false if the method returns due to an expired timeout,
+     * true otherwise.
+     * @throw IllegalArgumentException if timeout is negative
+     * @throw CardException if the operation failed
      */
-    void openAndConnect(const std::string& protocol);
+    bool
+    waitForCardAbsent(uint64_t timeout);
 
     /**
+     * Waits until a card is present in this terminal or the timeout
+     * expires. If the method returns due to an expired timeout, it returns
+     * false. Otherwise it return true.
      *
-     */
-    void closeAndDisconnect(const DisconnectionMode mode);
-
-    /**
+     * <P>If a card is present in this terminal when this
+     * method is called, it returns immediately.
      *
+     * @param timeout if positive, block for up to <code>timeout</code>
+     *   milliseconds; if zero, block indefinitely; must not be negative
+     * @return false if the method returns due to an expired timeout,
+     *   true otherwise.
+     * @throw IllegalArgumentException if timeout is negative
+     * @throw CardException if the operation failed
      */
-    static const std::vector<std::string>& listTerminals();
-
-    /**
-     *
-     */
-    const std::vector<uint8_t>& getATR();
-
-    /**
-     *
-     */
-    virtual const std::vector<uint8_t> transmitControlCommand(const int commandId,
-                                                              const std::vector<uint8_t>& command);
-
-    /**
-     *
-     */
-    std::vector<uint8_t> transmitApdu(const std::vector<uint8_t>& apduIn);
-
-    /**
-     *
-     */
-    void beginExclusive();
-
-    /**
-     *
-     */
-    void endExclusive();
-
-    /**
-     *
-     */
-    bool waitForCardAbsent(uint64_t timeout);
-
-    /**
-     *
-     */
-    bool waitForCardPresent(uint64_t timeout);
+    bool
+    waitForCardPresent(uint64_t timeout);
 
 	/**
 	 *
 	 */
-	friend std::ostream& operator<<(std::ostream& os, const CardTerminal& t);
+	friend std::ostream&
+    operator<<(std::ostream& os, const CardTerminal& t);
 
 	/**
 	 *
 	 */
-    friend std::ostream& operator<<(std::ostream& os, const std::vector<CardTerminal>& vt);
+    friend std::ostream&
+    operator<<(std::ostream& os, const std::vector<CardTerminal>& vt);
 
 	/**
 	 *
@@ -143,65 +155,15 @@ private:
     /**
      *
      */
-    SCARDCONTEXT mContext;
-
-    /**
-     *
-     */
-    SCARDHANDLE mHandle;
-
-    /**
-     *
-     */
-    DWORD mProtocol;
-
-    /**
-     *
-     */
-    SCARD_IO_REQUEST mPioSendPCI;
-
-    /**
-     *
-     */
-    DWORD mState;
-
-    /**
-     *
-     */
     const std::string mName;
 
     /**
      *
      */
-    std::vector<uint8_t> mAtr;
-
-    /**
-     *
-     */
-    bool mContextEstablished;
-
-    /**
-     *
-     */
-    void establishContext();
-
-    /**
-     *
-     */
-    void releaseContext();
-
-    /**
-     *
-     */
-    bool connect();
-
-    /**
-     *
-     */
-    void disconnect();
+    const std::shared_ptr<CardTerminals> mCardTerminals;
 };
 
-}
-}
-}
-}
+} /* namespace cpp */
+} /* namespace pcsc*/
+} /* namespace pcsc */
+} /* namespace plugin */

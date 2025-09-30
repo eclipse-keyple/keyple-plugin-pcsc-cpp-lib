@@ -13,15 +13,25 @@
 
 #include "keyple/plugin/pcsc/PcscReaderAdapter.hpp"
 
+#if defined(WIN32) || defined(__MINGW32__) || defined(__MINGW64__)
+#include <winscard.h>
+#else
+#include <PCSC/wintypes.h>
+#include <PCSC/winscard.h>
+#endif
+
 #include "keyple/core/plugin/CardIOException.hpp"
 #include "keyple/core/plugin/ReaderIOException.hpp"
 #include "keyple/core/plugin/TaskCanceledException.hpp"
 #include "keyple/core/util/HexUtil.hpp"
+#include "keyple/core/util/cpp/Thread.hpp"
 #include "keyple/core/util/cpp/exception/Exception.hpp"
 #include "keyple/core/util/cpp/exception/IllegalArgumentException.hpp"
 #include "keyple/core/util/cpp/exception/IllegalStateException.hpp"
+#include "keyple/core/util/cpp/exception/InterruptedException.hpp"
 #include "keyple/plugin/pcsc/PcscPluginAdapter.hpp"
 #include "keyple/plugin/pcsc/cpp/exception/CardException.hpp"
+#include "keyple/plugin/pcsc/cpp/exception/CardNotPresentException.hpp"
 
 namespace keyple {
 namespace plugin {
@@ -31,10 +41,13 @@ using keyple::core::plugin::CardIOException;
 using keyple::core::plugin::ReaderIOException;
 using keyple::core::plugin::TaskCanceledException;
 using keyple::core::util::HexUtil;
+using keyple::core::util::cpp::Thread;
 using keyple::core::util::cpp::exception::Exception;
 using keyple::core::util::cpp::exception::IllegalArgumentException;
 using keyple::core::util::cpp::exception::IllegalStateException;
+using keyple::core::util::cpp::exception::InterruptedException;
 using keyple::plugin::pcsc::cpp::exception::CardException;
+using keyple::plugin::pcsc::cpp::exception::CardNotPresentException;
 
 PcscReaderAdapter::PcscReaderAdapter(
     std::shared_ptr<CardTerminal> terminal,
@@ -46,11 +59,14 @@ PcscReaderAdapter::PcscReaderAdapter(
 , mName(terminal->getName())
 , mPluginAdapter(pluginAdapter)
 , mCardMonitoringCycleDuration(cardMonitoringCycleDuration)
+, mPingApdu(HexUtil::toByteArray("00C0000000")) // GET RESPONSE
 , mIsContactless(false)
 , mProtocol(IsoProtocol::ANY.getValue())
 , mIsModeExclusive(false)
+, mDisconnectionMode(keyple::plugin::pcsc::PcscReader::DisconnectionMode::RESET)
 , mLoopWaitCard(false)
 , mLoopWaitCardRemoval(false)
+, mIsObservationActive(false)
 {
 #if defined(WIN32) || defined(__MINGW32__) || defined(__MINGW64__)
     mIsWindows = true;
@@ -156,7 +172,7 @@ PcscReaderAdapter::isCurrentProtocol(const std::string& readerProtocol) const
         const std::string protocolRule
             = mPluginAdapter->getProtocolRule(readerProtocol);
         if (!protocolRule.empty()) {
-            const std::string atr = HexUtil::toHex(mTerminal->getATR());
+            const std::string atr = HexUtil::toHex(mCard->getATR());
             isCurrentProtocol
                 = Pattern::compile(protocolRule)->matcher(atr)->matches();
         }
@@ -173,13 +189,13 @@ PcscReaderAdapter::isCurrentProtocol(const std::string& readerProtocol) const
 void
 PcscReaderAdapter::onStartDetection()
 {
-    /* Nothing to do here in this reader */
+    mIsObservationActive = true;
 }
 
 void
 PcscReaderAdapter::onStopDetection()
 {
-    /* Nothing to do here in this reader */
+    mIsObservationActive = false;
 }
 
 const std::string&
@@ -191,7 +207,7 @@ PcscReaderAdapter::getName() const
 void
 PcscReaderAdapter::openPhysicalChannel()
 {
-    if (mIsPhysicalChannelOpen == true) {
+    if (mCard != nullptr) {
         return;
     }
 
@@ -205,9 +221,9 @@ PcscReaderAdapter::openPhysicalChannel()
             getName(),
             mProtocol);
 
-        mTerminal->openAndConnect(mProtocol);
+        mCard = mTerminal->connect(mProtocol);
         if (mIsModeExclusive) {
-            mTerminal->beginExclusive();
+            mCard->beginExclusive();
             mLogger->debug(
                 "Reader [%]: open card physical channel in exclusive mode\n",
                 getName());
@@ -218,7 +234,7 @@ PcscReaderAdapter::openPhysicalChannel()
                 getName());
         }
 
-        mIsPhysicalChannelOpen = true;
+        mChannel = mCard->getBasicChannel();
 
     } catch (const CardException& e) {
         throw ReaderIOException(
@@ -230,13 +246,23 @@ PcscReaderAdapter::openPhysicalChannel()
 void
 PcscReaderAdapter::closePhysicalChannel()
 {
-    if (mIsPhysicalChannelOpen == false) {
-        return;
+    /*
+     * If the reader is observed, the actual disconnection will be done in the
+     * card removal sequence.
+     */
+    if (!mIsObservationActive) {
+        disconnect();
     }
+}
 
+void PcscReaderAdapter::disconnect()
+{
     try {
-        if (mTerminal != nullptr) {
-            mTerminal->closeAndDisconnect(mDisconnectionMode);
+        if (mCard != nullptr) {
+            /* Disconnect using the extended mode allowing UNPOWER. */
+            mCard->disconnect(getDisposition(mDisconnectionMode));
+            /* Reset the reader state to avoid bad card detection next time. */
+            resetReaderState();
         }
 
     } catch (const CardException& e) {
@@ -246,6 +272,34 @@ PcscReaderAdapter::closePhysicalChannel()
     }
 
     resetContext();
+}
+
+int PcscReaderAdapter::getDisposition(const DisconnectionMode mode)
+{
+    switch (mode) {
+    case DisconnectionMode::RESET:
+        return SCARD_RESET_CARD;
+    case DisconnectionMode::LEAVE:
+        return SCARD_LEAVE_CARD;
+    case DisconnectionMode::UNPOWER:
+        return SCARD_UNPOWER_CARD;
+    case DisconnectionMode::EJECT:
+        return SCARD_EJECT_CARD;
+    default:
+        throw IllegalArgumentException(std::string("Unknown DisconnectionMode: ") + mode);
+    }
+}
+
+void PcscReaderAdapter::resetReaderState()
+{
+    try {
+        if (mDisconnectionMode == DisconnectionMode::UNPOWER) {
+            mTerminal->connect("*")->disconnect(false);
+        }
+
+    } catch (const CardException& /*e*/) {
+        /* NOP */
+    }
 }
 
 bool
@@ -258,7 +312,7 @@ bool
 PcscReaderAdapter::checkCardPresence()
 {
     try {
-        const bool isCardPresent = mTerminal->isCardPresent(false);
+        const bool isCardPresent = mTerminal->isCardPresent();
         closePhysicalChannelSafely();
 
         return isCardPresent;
@@ -274,31 +328,24 @@ void
 PcscReaderAdapter::closePhysicalChannelSafely()
 {
     try {
-        if (mIsPhysicalChannelOpen == true) {
-            /*
-             * Force reconnection next time.
-             * Do not reset the card after disconnecting.
-             */
-            mTerminal->closeAndDisconnect(DisconnectionMode::LEAVE);
-        }
+        disconnect();
 
     } catch (const Exception&) {
-        /* Do nothing */
+        /* NOP */
     }
-
-    resetContext();
 }
 
 void
 PcscReaderAdapter::resetContext()
 {
+    mCard = nullptr;
     mIsPhysicalChannelOpen = false;
 }
 
 const std::string
 PcscReaderAdapter::getPowerOnData() const
 {
-    return HexUtil::toHex(mTerminal->getATR());
+    return HexUtil::toHex(mCard->getATR());
 }
 
 const std::vector<uint8_t>
@@ -306,12 +353,19 @@ PcscReaderAdapter::transmitApdu(const std::vector<uint8_t>& apduCommandData)
 {
     std::vector<uint8_t> apduResponseData;
 
-    if (mIsPhysicalChannelOpen) {
+    if (mChannel) {
         try {
-            apduResponseData = mTerminal->transmitApdu(apduCommandData);
+            apduResponseData = mChannel->transmit(apduCommandData);
+
+        } catch (const CardNotPresentException& e) {
+            throw CardIOException(
+                mName + ": " + e.getMessage(),
+                std::make_shared<CardNotPresentException>(e));
 
         } catch (const CardException& e) {
-            if (e.getMessage().find("REMOVED") != std::string::npos) {
+            if (e.getMessage().find("CARD") != std::string::npos ||
+                e.getMessage().find("NOT_TRANSACTED") != std::string::npos ||
+                e.getMessage().find("INVALID_ATR") != std::string::npos) {
                 throw CardIOException(
                     getName() + ":" + e.getMessage(),
                     std::make_shared<CardException>(e));
@@ -325,7 +379,13 @@ PcscReaderAdapter::transmitApdu(const std::vector<uint8_t>& apduCommandData)
             /* Card could have been removed prematurely */
             throw CardIOException(
                 getName() + ":" + e.getMessage(),
-                std::make_shared<IllegalStateException>(e));
+                std::make_shared<IllegalStateException>(e.getMessage()));
+
+        } catch (const IllegalArgumentException& e) {
+            /* Card could have been removed prematurely */
+            throw CardIOException(
+                getName() + ":" + e.getMessage(),
+                std::make_shared<IllegalStateException>(e.getMessage()));
         }
 
     } else {
@@ -372,38 +432,94 @@ PcscReaderAdapter::stopCardPresenceMonitoringDuringProcessing()
 void
 PcscReaderAdapter::waitForCardRemoval()
 {
-    mLogger->trace(
-        "Reader [%]: start waiting card removal (loop latency: % ms)\n",
-        mName,
-        mCardMonitoringCycleDuration);
+    mLogger->trace("Reader [%]: start waiting card removal\n", mName);
 
-    /* Activate loop */
     mLoopWaitCardRemoval = true;
 
     try {
-        while (mLoopWaitCardRemoval) {
-            if (mTerminal->waitForCardAbsent(mCardMonitoringCycleDuration)) {
-                /* Card removed */
-                mLogger->trace("Reader [%]: card removed\n", mName);
-                return;
-            }
+        if (mDisconnectionMode == DisconnectionMode::UNPOWER) {
+            waitForCardRemovalByPolling();
+        } else {
+            waitForCardRemovalStandard();
+        }
 
-            // if (Thread.interrupted()) {
-            //     break;
+    } catch (const Exception&) {
+    }
+
+    /* Finally */
+    try {
+        disconnect();
+
+    } catch (const Exception& e) {
+        mLogger->warn(
+            "Error while disconnecting card during card removal: %\n",
+            e.getMessage());
+    }
+
+
+    if (!mLoopWaitCardRemoval) {
+        mLogger->trace("Reader [%]: waiting card removal stopped\n", mName);
+    } else {
+        mLogger->trace("Reader [%]: card removed\n", mName);
+    }
+
+    if (!mLoopWaitCardRemoval) {
+        throw TaskCanceledException(
+          mName + ": the wait for the card removal task has been cancelled.");
+    }
+}
+
+void
+PcscReaderAdapter::waitForCardRemovalByPolling()
+{
+    try {
+        while (mLoopWaitCardRemoval) {
+            transmitApdu(mPingApdu);
+            Thread::sleep(25);
+            // if (Thread::isInterrupted()) {
+            //     return;
             // }
         }
 
-        mLogger->trace("Reader [%]: waiting card removal stopped\n", mName);
+    } catch (const CardIOException& e) {
+        mLogger->trace(
+            "Expected IOException while waiting for card removal: %\n",
+            e.getMessage());
+
+    } catch (const ReaderIOException& e) {
+        mLogger->trace(
+            "Expected IOException while waiting for card removal: %\n",
+            e.getMessage());
+
+    } catch (const InterruptedException& e) {
+        mLogger->trace(
+            "InterruptedException while waiting for card removal: %\n",
+            e.getMessage());
+        // Thread::currentThread().interrupt();
+    }
+  }
+
+void PcscReaderAdapter::waitForCardRemovalStandard()
+{
+    try {
+        while (mLoopWaitCardRemoval) {
+            if (mTerminal->waitForCardAbsent(mCardMonitoringCycleDuration)) {
+                return;
+            }
+            // if (isInterrupted()) {
+            //     return;
+            // }
+        }
 
     } catch (const CardException& e) {
-        /* Here, it is a communication failure with the reader */
+        mLogger->trace(
+            "Expected CardException while waiting for card removal: %\n",
+            e.getMessage());
+
         throw ReaderIOException(
             mName + ": an error occurred while waiting for the card removal.",
             std::make_shared<CardException>(e));
     }
-
-    throw TaskCanceledException(
-        mName + ": the wait for the card removal task has been cancelled.");
 }
 
 void
@@ -420,9 +536,9 @@ PcscReaderAdapter::setSharingMode(const SharingMode sharingMode)
 
     if (sharingMode == SharingMode::SHARED) {
         /* If a card is present, change the mode immediately */
-        if (mIsPhysicalChannelOpen) {
+        if (mCard != nullptr) {
             try {
-                mTerminal->endExclusive();
+                mCard->endExclusive();
 
             } catch (const CardException& e) {
                 throw IllegalStateException(
@@ -484,29 +600,18 @@ const std::vector<uint8_t>
 PcscReaderAdapter::transmitControlCommand(
     const int commandId, const std::vector<uint8_t>& command)
 {
-    bool temporaryConnection = false;
     std::vector<uint8_t> response;
     const int controlCode
         = mIsWindows ? 0x00310000 | (commandId << 2) : 0x42000000 | commandId;
 
     try {
-        if (mTerminal != nullptr) {
+        if (mCard != nullptr) {
 
-            if (!mTerminal->isConnected()) {
-                temporaryConnection = true;
-                mTerminal->openAndConnect(
-                    PcscReader::IsoProtocol::DIRECT.getValue());
-            }
-
-            response = mTerminal->transmitControlCommand(controlCode, command);
-
-            if (temporaryConnection) {
-                mTerminal->closeAndDisconnect(DisconnectionMode::LEAVE);
-            }
-
+            response = mCard->transmitControlCommand(controlCode, command);
         } else {
-            /* C++ don't do virtual cards for now... */
-            throw IllegalStateException("Reader failure.");
+            std::shared_ptr<Card> virtualCard = mTerminal->connect("DIRECT");
+            response = virtualCard->transmitControlCommand(controlCode, command);
+            virtualCard->disconnect(false);
         }
 
     } catch (const CardException& e) {

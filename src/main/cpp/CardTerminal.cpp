@@ -15,45 +15,44 @@
 
 #include <chrono>
 #include <cstdint>
-#include <cstring>
+#include <string>
+
+#include "PcscUtils.hpp"
 
 #include "keyple/core/util/cpp/KeypleStd.hpp"
+#include "keyple/core/util/cpp/StringUtils.hpp"
 #include "keyple/core/util/cpp/System.hpp"
 #include "keyple/core/util/cpp/Thread.hpp"
 #include "keyple/core/util/cpp/exception/IllegalArgumentException.hpp"
+#include "keyple/core/util/cpp/exception/RuntimeException.hpp"
+#include "keyple/plugin/pcsc/cpp/CardTerminals.hpp"
+#include "keyple/plugin/pcsc/cpp/exception/CardException.hpp"
+#include "keyple/plugin/pcsc/cpp/exception/CardNotPresentException.hpp"
 #include "keyple/plugin/pcsc/cpp/exception/CardTerminalException.hpp"
+
 
 namespace keyple {
 namespace plugin {
 namespace pcsc {
 namespace cpp {
 
+using keyple::core::util::cpp::StringUtils;
 using keyple::core::util::cpp::System;
 using keyple::core::util::cpp::Thread;
 using keyple::core::util::cpp::exception::IllegalArgumentException;
+using keyple::core::util::cpp::exception::RuntimeException;
+using keyple::plugin::pcsc::cpp::exception::CardException;
+using keyple::plugin::pcsc::cpp::exception::CardNotPresentException;
 using keyple::plugin::pcsc::cpp::exception::CardTerminalException;
 
 using DisconnectionMode = PcscReader::DisconnectionMode;
 
-#ifdef WIN32
-std::string
-pcsc_stringify_error(uint64_t rv)
+CardTerminal::CardTerminal(
+  const std::shared_ptr<CardTerminals> cardTerminals
+, const std::string& name)
+: mName(name)
+, mCardTerminals(cardTerminals)
 {
-    static char out[20];
-    sprintf_s(out, sizeof(out), "0x%08X", static_cast<unsigned int>(rv));
-
-    return std::string(out);
-}
-#endif
-
-CardTerminal::CardTerminal(const std::string& name)
-: mContext(0)
-, mHandle(0)
-, mState(0)
-, mName(name)
-, mContextEstablished(false)
-{
-    memset(&mPioSendPCI, 0, sizeof(SCARD_IO_REQUEST));
 }
 
 const std::string&
@@ -62,375 +61,97 @@ CardTerminal::getName() const
     return mName;
 }
 
-const std::vector<std::string>&
-CardTerminal::listTerminals()
+std::shared_ptr<Card>
+CardTerminal::connect(const std::string& protocol)
 {
-    ULONG ret;
-    SCARDCONTEXT context;
-    char* readers = NULL;
-    char* ptr = NULL;
-    DWORD len = 0;
-    static std::vector<std::string> list;
+    int dwPreferredProtocols;
+    int dwShareMode = SCARD_SHARE_SHARED;
 
-    /* Clear list */
-    list.clear();
+    std::string _protocol = StringUtils::toupper(protocol);
 
-    ret = SCardEstablishContext(SCARD_SCOPE_USER, NULL, NULL, &context);
-    if (ret != SCARD_S_SUCCESS) {
-        throw CardTerminalException(pcsc_stringify_error(ret));
+    /* Proprietary extension */
+    if (StringUtils::startsWith(protocol, "EXCLUSIVE;")) {
+        dwShareMode = SCARD_SHARE_EXCLUSIVE;
+        const size_t prefixSize = std::string("EXCLUSIVE;").size();
+        _protocol = _protocol.substr(prefixSize, protocol.size() - prefixSize);
     }
 
-    ret = SCardListReaders(context, NULL, NULL, &len);
-    if (ret != SCARD_S_SUCCESS) {
-        throw CardTerminalException(pcsc_stringify_error(ret));
+    if ("T=0" == _protocol) {
+        dwPreferredProtocols = SCARD_PROTOCOL_T0;
+    } else if ("T=1" == _protocol) {
+        dwPreferredProtocols = SCARD_PROTOCOL_T1;
+    } else if ("*" == _protocol) {
+        dwPreferredProtocols = SCARD_PROTOCOL_ANY;
+    } else if ("DIRECT" == _protocol) {
+        /* Connect directly to reader to send control commands. */
+        dwPreferredProtocols = 0;
+        // /* OSX 10.11 would otherwise fail with SCARD_E_INVALID_VALUE
+        // if (Platform.isMac()) {
+        //     dwPreferredProtocols = SCARD_PROTOCOL_ANY;
+        // }
+        dwShareMode = SCARD_SHARE_DIRECT;
+    } else {
+        throw IllegalArgumentException(
+            "Protocol should be one of (prepended with EXCLUSIVE;) T=0, T=1," \
+            " *, DIRECT. Got " + protocol);
     }
 
-    readers = static_cast<char*>(calloc(len, sizeof(char)));
+    DWORD dwProtocol;
+    SCARDHANDLE handle;
+    SCARD_IO_REQUEST ioRequest;
 
-    if (readers == NULL) {
-        /* No readers to add to list */
-        return list;
-    }
-
-    ret = SCardListReaders(context, NULL, readers, &len);
-    if (ret != SCARD_S_SUCCESS) {
-        throw CardTerminalException(pcsc_stringify_error(ret));
-    }
-
-    ptr = readers;
-
-    if (!ptr) {
-        return list;
-    }
-
-    while (*ptr) {
-        std::string s(ptr);
-        list.push_back(s);
-        ptr += strlen(ptr) + 1;
-    }
-
-    SCardReleaseContext(context);
-    free(readers);
-
-    return list;
-}
-
-void
-CardTerminal::establishContext()
-{
-    if (mContextEstablished)
-        return;
-
-    LONG ret = SCardEstablishContext(SCARD_SCOPE_USER, NULL, NULL, &mContext);
-    if (ret != SCARD_S_SUCCESS) {
-        mContextEstablished = false;
-        mLogger->error(
-            "SCardEstablishContext failed with error: %\n",
-            std::string(pcsc_stringify_error(ret)));
-        throw CardTerminalException("SCardEstablishContext failed");
-    }
-
-    mContextEstablished = true;
-}
-
-void
-CardTerminal::releaseContext()
-{
-    if (!mContextEstablished)
-        return;
-
-    SCardReleaseContext(mContext);
-    mContextEstablished = false;
-}
-
-bool
-CardTerminal::connect()
-{
     LONG rv = SCardConnect(
-        mContext,
+        mCardTerminals->mContext,
         (LPCSTR)mName.c_str(),
-        SCARD_SHARE_SHARED,
-        SCARD_PROTOCOL_T0 | SCARD_PROTOCOL_T1,
-        &mHandle,
-        &mProtocol);
+        (DWORD)dwShareMode,
+        (DWORD)dwPreferredProtocols,
+        &handle,
+        &dwProtocol);
 
-    return rv == SCARD_S_SUCCESS;
-}
-
-const std::vector<uint8_t>
-CardTerminal::transmitControlCommand(
-    const int commandId, const std::vector<uint8_t>& command)
-{
-    char r_apdu[261];
-    DWORD dwRecv = sizeof(r_apdu);
-
-    LONG rv = SCardControl(
-        mHandle,
-        (DWORD)commandId,
-        (LPCBYTE)command.data(),
-        (DWORD)command.size(),
-        (LPBYTE)r_apdu,
-        (DWORD)sizeof(r_apdu),
-        &dwRecv);
-    if (rv != SCARD_S_SUCCESS) {
-        mLogger->error(
-            "SCardControl failed with error: %\n",
-            std::string(pcsc_stringify_error(rv)));
-        throw CardTerminalException("SCardControl failed");
-    }
-
-    std::vector<uint8_t> response(r_apdu, r_apdu + dwRecv);
-
-    return response;
-}
-
-void
-CardTerminal::disconnect()
-{
-    SCardDisconnect(mHandle, SCARD_LEAVE_CARD);
-
-    mHandle = 0;
-}
-
-bool
-CardTerminal::isCardPresent(bool release)
-{
-    (void)release;
-    try {
-        establishContext();
-    } catch (CardTerminalException& e) {
-        mLogger->error("isCardPresent - caught CardTerminalException %\n", e);
-        throw;
-    }
-
-    bool status = connect();
-    disconnect();
-
-    return status;
-}
-
-bool
-CardTerminal::isConnected()
-{
-    return mContextEstablished && mHandle;
-}
-
-void
-CardTerminal::openAndConnect(const std::string& protocol)
-{
-    LONG rv;
-    DWORD connectProtocol;
-    DWORD sharingMode = SCARD_SHARE_SHARED;
-    BYTE reader[200];
-    DWORD readerLen = sizeof(reader);
-    BYTE _atr[33];
-    DWORD atrLen = sizeof(_atr);
-
-    mLogger->debug("[%] openAndConnect - protocol: %\n", mName, protocol);
-
-    try {
-        establishContext();
-    } catch (CardTerminalException& e) {
-        mLogger->error("openAndConnect - caught CardTerminalException %\n", e);
-        throw;
-    }
-
-    if (!protocol.compare(PcscReader::IsoProtocol::ANY.getValue())) {
-        connectProtocol = SCARD_PROTOCOL_T0 | SCARD_PROTOCOL_T1;
-    } else if (!protocol.compare(PcscReader::IsoProtocol::T0.getValue())) {
-        connectProtocol = SCARD_PROTOCOL_T0;
-    } else if (!protocol.compare(PcscReader::IsoProtocol::T1.getValue())) {
-        connectProtocol = SCARD_PROTOCOL_T1;
-    } else if (!protocol.compare(PcscReader::IsoProtocol::DIRECT.getValue())) {
-        connectProtocol = 0;
-        sharingMode = SCARD_SHARE_DIRECT;
-    } else {
-        throw IllegalArgumentException("Unsupported protocol " + protocol);
-    }
-
-    mLogger->debug(
-        "openAndConnect - connecting to % with protocol: %, "
-        "connectProtocol: % and sharingMode: %\n",
-        mName,
-        protocol,
-        connectProtocol,
-        sharingMode);
-
-    rv = SCardConnect(
-        mContext,
-        mName.c_str(),
-        sharingMode,
-        connectProtocol,
-        &mHandle,
-        &mProtocol);
-    if (rv != SCARD_S_SUCCESS) {
-        mLogger->error(
-            "openAndConnect - SCardConnect failed (%)\n",
-            std::string(pcsc_stringify_error(rv)));
-        releaseContext();
-        throw CardTerminalException("openAndConnect failed");
-    }
-
-    switch (mProtocol) {
-    case SCARD_PROTOCOL_T0:
-        mPioSendPCI = *SCARD_PCI_T0;
-        break;
-    case SCARD_PROTOCOL_T1:
-        mPioSendPCI = *SCARD_PCI_T1;
-        break;
-    }
-
-    rv = SCardStatus(
-        mHandle, (LPSTR)reader, &readerLen, &mState, &mProtocol, _atr, &atrLen);
-    if (rv != SCARD_S_SUCCESS) {
-        mLogger->error(
-            "openAndConnect - SCardStatus failed (s)\n",
-            std::string(pcsc_stringify_error(rv)));
-        releaseContext();
-        throw CardTerminalException("openAndConnect failed");
-    } else {
-        mLogger->debug("openAndConnect - card state: %\n", mState);
-    }
-
-    mAtr.clear();
-    mAtr.insert(mAtr.end(), _atr, _atr + atrLen);
-}
-
-void
-CardTerminal::closeAndDisconnect(const DisconnectionMode mode)
-{
-    mLogger->debug("[%] closeAndDisconnect - mode: %\n", mName, mode);
-
-    SCardDisconnect(
-        mHandle,
-        mode == DisconnectionMode::RESET ? SCARD_RESET_CARD : SCARD_LEAVE_CARD);
-
-    releaseContext();
-}
-
-const std::vector<uint8_t>&
-CardTerminal::getATR()
-{
-    return mAtr;
-}
-
-std::vector<uint8_t>
-CardTerminal::transmitApdu(const std::vector<uint8_t>& apduIn)
-{
-    if (apduIn.size() == 0)
-        throw IllegalArgumentException("command cannot be empty");
-
-    /* Make a copy */
-    std::vector<uint8_t> _apduIn = apduIn;
-
-    /* To check */
-    bool t0GetResponse = true;
-    bool t1GetResponse = true;
-
-    /*
-     * Note that we modify the 'command' array in some cases, so it must be
-     * a copy of the application provided data
-     */
-    int n = static_cast<int>(_apduIn.size());
-    bool t0 = mProtocol == SCARD_PROTOCOL_T0;
-    bool t1 = mProtocol == SCARD_PROTOCOL_T1;
-
-    if (t0 && (n >= 7) && (_apduIn[4] == 0))
-        throw CardTerminalException("Extended len. not supported for T=0");
-
-    if ((t0 || t1) && (n >= 7)) {
-        int lc = _apduIn[4] & 0xff;
-        if (lc != 0) {
-            if (n == lc + 6) {
-                n--;
-            }
-        } else {
-            lc = ((_apduIn[5] & 0xff) << 8) | (_apduIn[6] & 0xff);
-            if (n == lc + 9) {
-                n -= 2;
-            }
-        }
-    }
-
-    bool getresponse = (t0 && t0GetResponse) || (t1 && t1GetResponse);
-    int k = 0;
-    std::vector<uint8_t> result;
-
-    while (true) {
-        if (++k >= 32) {
-            throw CardTerminalException("Could not obtain response");
+    if (rv == SCARD_S_SUCCESS) {
+        switch (dwProtocol) {
+        case SCARD_PROTOCOL_T0:
+            ioRequest = *SCARD_PCI_T0;
+            break;
+        case SCARD_PROTOCOL_T1:
+            ioRequest = *SCARD_PCI_T1;
+            break;
         }
 
-        char r_apdu[261];
-        DWORD dwRecv = sizeof(r_apdu);
-        uint64_t rv;
+        DWORD readerLength;
+        BYTE _atr[33];
+        DWORD atrLen = sizeof(_atr);
+        DWORD state;
 
-        mLogger->debug("[%] transmitApdu - c-apdu >> %\n", mName, _apduIn);
-
-        rv = SCardTransmit(
-            mHandle,
-            &mPioSendPCI,
-            (LPCBYTE)_apduIn.data(),
-            static_cast<DWORD>(_apduIn.size()),
+        rv = SCardStatus(
+            handle,
             NULL,
-            (LPBYTE)r_apdu,
-            &dwRecv);
-        if (rv != SCARD_S_SUCCESS) {
-            mLogger->error(
-                "SCardTransmit failed with error: %\n",
-                std::string(pcsc_stringify_error(rv)));
-            throw CardTerminalException("ScardTransmit failed");
-        }
+            &readerLength,
+            &state,
+            &dwProtocol,
+            _atr,
+            &atrLen);
 
-        std::vector<uint8_t> response(r_apdu, r_apdu + dwRecv);
+        std::vector<uint8_t> atr(_atr, _atr + atrLen);
 
-        mLogger->debug("[%] transmitApdu - r-apdu << %\n", mName, response);
-
-        int rn = static_cast<int>(response.size());
-        if (getresponse && (rn >= 2)) {
-            /* See ISO 7816/2005, 5.1.3 */
-            if ((rn == 2) && (response[0] == 0x6c)) {
-                // Resend command using SW2 as short Le field
-                _apduIn[n - 1] = response[1];
-                continue;
-            }
-
-            if (response[rn - 2] == 0x61) {
-                /* Issue a GET RESPONSE command with the same CLA using SW2
-                 * as short Le field */
-                if (rn > 2)
-                    result.insert(
-                        result.end(),
-                        response.begin(),
-                        response.begin() + rn - 2);
-
-                std::vector<uint8_t> getResponse(5);
-                getResponse[0] = _apduIn[0];
-                getResponse[1] = 0xC0;
-                getResponse[2] = 0;
-                getResponse[3] = 0;
-                getResponse[4] = response[rn - 1];
-                n = 5;
-                _apduIn.swap(getResponse);
-                continue;
-            }
-        }
-
-        result.insert(result.end(), response.begin(), response.begin() + rn);
-        break;
+        return std::make_shared<Card>(
+            shared_from_this(), handle, atr, dwProtocol, ioRequest);
+    } else if (rv == static_cast<LONG>(SCARD_W_REMOVED_CARD)) {
+        throw CardNotPresentException("Card not present.");
+    } else {
+        throw RuntimeException("Should not reach here.");
     }
-
-    return result;
 }
 
-void
-CardTerminal::beginExclusive()
+bool
+CardTerminal::isCardPresent()
 {
-}
+    SCARD_READERSTATE rgReaderStates[1];
+    rgReaderStates[0].szReader = mName.c_str();
 
-void
-CardTerminal::endExclusive()
-{
+    SCardGetStatusChange(mCardTerminals->mContext, 0, rgReaderStates, 1);
+
+	return 0 != (rgReaderStates[0].dwEventState & SCARD_STATE_PRESENT);
 }
 
 bool
@@ -443,7 +164,7 @@ CardTerminal::waitForCardAbsent(uint64_t timeout)
               .count();
 
     do {
-        bool isCardAbsent = !this->isCardPresent(false);
+        bool isCardAbsent = !this->isCardPresent();
         if (isCardAbsent) {
             return true;
         }
@@ -467,7 +188,7 @@ CardTerminal::waitForCardPresent(uint64_t timeout)
               .count();
 
     do {
-        bool isCardPresent = this->isCardPresent(false);
+        bool isCardPresent = this->isCardPresent();
         if (isCardPresent) {
             return true;
         }

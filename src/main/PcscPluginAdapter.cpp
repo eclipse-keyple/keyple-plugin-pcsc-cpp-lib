@@ -16,12 +16,16 @@
 #include "keyple/core/plugin/PluginIOException.hpp"
 #include "keyple/core/util/cpp/KeypleStd.hpp"
 #include "keyple/core/util/cpp/StringUtils.hpp"
+#include "keyple/core/util/cpp/exception/Exception.hpp"
 #include "keyple/core/util/cpp/exception/IllegalArgumentException.hpp"
 #include "keyple/plugin/pcsc/PcscPluginFactoryAdapter.hpp"
 #include "keyple/plugin/pcsc/PcscReaderAdapter.hpp"
+#include "keyple/plugin/pcsc/PcscCardCommunicationProtocol.hpp"
 #include "keyple/plugin/pcsc/PcscSupportedContactProtocol.hpp"
 #include "keyple/plugin/pcsc/PcscSupportedContactlessProtocol.hpp"
 #include "keyple/plugin/pcsc/cpp/CardTerminal.hpp"
+#include "keyple/plugin/pcsc/cpp/CardTerminals.hpp"
+#include "keyple/plugin/pcsc/cpp/TerminalFactory.hpp"
 #include "keyple/plugin/pcsc/cpp/exception/CardTerminalException.hpp"
 
 namespace keyple {
@@ -30,8 +34,11 @@ namespace pcsc {
 
 using keyple::core::plugin::PluginIOException;
 using keyple::core::util::cpp::StringUtils;
+using keyple::core::util::cpp::exception::Exception;
 using keyple::core::util::cpp::exception::IllegalArgumentException;
 using keyple::plugin::pcsc::cpp::CardTerminal;
+using keyple::plugin::pcsc::cpp::CardTerminals;
+using keyple::plugin::pcsc::cpp::TerminalFactory;
 using keyple::plugin::pcsc::cpp::exception::CardTerminalException;
 
 std::shared_ptr<PcscPluginAdapter> PcscPluginAdapter::INSTANCE;
@@ -41,28 +48,30 @@ const int PcscPluginAdapter::MONITORING_CYCLE_DURATION_MS = 1000;
 PcscPluginAdapter::PcscPluginAdapter()
 : PcscPlugin()
 , ObservablePluginSpi()
+, mIsCardTerminalsInitialized(false)
 {
     /* Initializes the protocol rules map with default values. */
     mProtocolRulesMap = {
 
         /* Contactless protocols */
-        {PcscSupportedContactlessProtocol::ISO_14443_4.getName(),
-         PcscSupportedContactlessProtocol::ISO_14443_4.getDefaultRule()},
-        {PcscSupportedContactlessProtocol::INNOVATRON_B_PRIME_CARD.getName(),
-         PcscSupportedContactlessProtocol::INNOVATRON_B_PRIME_CARD
-             .getDefaultRule()},
-        {PcscSupportedContactlessProtocol::MIFARE_ULTRA_LIGHT.getName(),
-         PcscSupportedContactlessProtocol::MIFARE_ULTRA_LIGHT.getDefaultRule()},
+        {PcscCardCommunicationProtocol::ISO_14443_4.getName(),
+         PcscCardCommunicationProtocol::ISO_14443_4.getDefaultRule()},
+        {PcscCardCommunicationProtocol::INNOVATRON_B_PRIME.getName(),
+         PcscCardCommunicationProtocol::INNOVATRON_B_PRIME.getDefaultRule()},
+        {PcscCardCommunicationProtocol::MIFARE_ULTRALIGHT.getName(),
+         PcscCardCommunicationProtocol::MIFARE_ULTRALIGHT.getDefaultRule()},
         {PcscSupportedContactlessProtocol::MIFARE_CLASSIC.getName(),
          PcscSupportedContactlessProtocol::MIFARE_CLASSIC.getDefaultRule()},
         {PcscSupportedContactlessProtocol::MIFARE_DESFIRE.getName(),
          PcscSupportedContactlessProtocol::MIFARE_DESFIRE.getDefaultRule()},
-        {PcscSupportedContactlessProtocol::MEMORY_ST25.getName(),
-         PcscSupportedContactlessProtocol::MEMORY_ST25.getDefaultRule()},
+        {PcscCardCommunicationProtocol::ST25_SRT512.getName(),
+         PcscCardCommunicationProtocol::ST25_SRT512.getDefaultRule()},
 
         /* Contact protocols */
-        {PcscSupportedContactProtocol::ISO_7816_3.getName(),
-         PcscSupportedContactProtocol::ISO_7816_3.getDefaultRule()},
+        {PcscCardCommunicationProtocol::ISO_7816_3.getName(),
+         PcscCardCommunicationProtocol::ISO_7816_3.getDefaultRule()},
+
+         /* Legacy protocols for compatibility */
         {PcscSupportedContactProtocol::ISO_7816_3_T0.getName(),
          PcscSupportedContactProtocol::ISO_7816_3_T0.getDefaultRule()},
         {PcscSupportedContactProtocol::ISO_7816_3_T1.getName(),
@@ -142,18 +151,20 @@ PcscPluginAdapter::onUnregister()
 const std::vector<std::shared_ptr<CardTerminal>>
 PcscPluginAdapter::getCardTerminalList()
 {
-    /* Parse the current readers list to create the ReaderSpi(s) associated with
-     * new reader(s) */
-    std::vector<std::shared_ptr<CardTerminal>> terminals;
+    /*
+     * Parse the current readers list to create the ReaderSpi(s) associated with
+     * new reader(s).
+     */
 
     try {
-        const std::vector<std::string>& terminalNames
-            = CardTerminal::listTerminals();
-        for (const auto& terminalName : terminalNames) {
-            terminals.push_back(std::make_shared<CardTerminal>(terminalName));
+        if (!mIsCardTerminalsInitialized) {
+            mTerminals = TerminalFactory::getDefault()->terminals();
+            mIsCardTerminalsInitialized = true;
         }
 
-    } catch (const CardTerminalException& e) {
+        return mTerminals->list();
+
+    } catch (const Exception& e) {
         const auto msg = e.getMessage();
 
         if (StringUtils::contains(msg, "SCARD_E_NO_READERS_AVAILABLE")) {
@@ -173,11 +184,11 @@ PcscPluginAdapter::getCardTerminalList()
         } else {
             throw PluginIOException(
                 "Could not access terminals list",
-                std::make_shared<CardTerminalException>(e));
+                std::make_shared<CardTerminalException>(msg));
         }
     }
 
-    return terminals;
+    return std::vector<std::shared_ptr<CardTerminal>>(0);
 }
 
 std::shared_ptr<ReaderSpi>

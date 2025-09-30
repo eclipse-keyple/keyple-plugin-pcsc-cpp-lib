@@ -13,27 +13,33 @@
 
 #pragma once
 
-#include "keyple/core/common/KeyplePluginExtension.hpp"
+#include "keyple/plugin/pcsc/cpp/exception/CardException.hpp"
 
 namespace keyple {
 namespace plugin {
 namespace pcsc {
+namespace cpp {
+namespace exception {
 
-using keyple::core::common::KeyplePluginExtension;
 
-/**
- * PC/SC specific KeyplePluginExtension.
- *
- * @since 2.0.0
- */
-class PcscPlugin : public KeyplePluginExtension {
+class CardNotPresentException : public CardException {
 public:
     /**
-     * Visrtual destructor.
+     *
      */
-    virtual ~PcscPlugin() = default;
+    explicit CardNotPresentException(const std::string& msg)
+    : CardException(msg) {}
+
+    /**
+     *
+     */
+    CardNotPresentException(
+        const std::string& msg, const std::shared_ptr<Exception> cause)
+    : CardException(msg, cause) {}
 };
 
-} /* namespace pcsc */
-} /* namespace plugin */
-} /* namespace keyple */
+}
+}
+}
+}
+}
