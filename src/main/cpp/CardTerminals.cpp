@@ -15,7 +15,16 @@
 
 #include <cstdint>
 #include <cstring>
+#include <string>
 
+#if defined(WIN32) || defined(__MINGW32__) || defined(__MINGW64__)
+#include <winscard.h>
+#else
+#include <PCSC/wintypes.h>
+#include <PCSC/winscard.h>
+#endif
+
+#include "keyple/core/util/cpp/exception/IllegalArgumentException.hpp"
 #include "keyple/plugin/pcsc/cpp/exception/CardException.hpp"
 #include "keyple/plugin/pcsc/cpp/exception/CardTerminalException.hpp"
 
@@ -24,6 +33,7 @@ namespace plugin {
 namespace pcsc {
 namespace cpp {
 
+using keyple::core::util::cpp::exception::IllegalArgumentException;
 using keyple::plugin::pcsc::cpp::exception::CardException;
 using keyple::plugin::pcsc::cpp::exception::CardTerminalException;
 
@@ -46,6 +56,32 @@ void
 CardTerminals::waitForChange()
 {
     waitForChange(0);
+}
+
+bool
+CardTerminals::waitForChange(long timeout)
+{
+    if (timeout < 0) {
+        throw IllegalArgumentException(
+            "Negative timeout " + std::to_string(timeout));
+    } else if (timeout == 0) {
+        timeout = INFINITE;
+    }
+
+    mZombieReaders.clear();
+
+    for (auto& reader: mKnownReaders) {
+        reader.dwCurrentState = reader.dwEventState;
+        reader.dwEventState = 0;
+    }
+
+    LONG rv = SCardGetStatusChange(
+        mContext, timeout, mKnownReaders.data(), mKnownReaders.size());
+    if (rv == SCARD_E_TIMEOUT) {
+        return false;
+    }
+
+    return true;
 }
 
 std::shared_ptr<CardTerminal>
