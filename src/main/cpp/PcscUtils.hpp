@@ -13,32 +13,40 @@
 
 #pragma once
 
-#include "keyple/core/util/cpp/exception/Exception.hpp"
+#if defined(WIN32) || defined(__MINGW32__) || defined(__MINGW64__)
+
+#include <string>
+#include <cstdint>
+#include <cstdio>
+
+#include <winscard.h>
+
+// SCARD_PROTOCOL_ANY is not defined in Windows winscard.h
+#ifndef SCARD_PROTOCOL_ANY
+#define SCARD_PROTOCOL_ANY (SCARD_PROTOCOL_T0 | SCARD_PROTOCOL_T1)
+#endif
 
 namespace keyple {
 namespace plugin {
 namespace pcsc {
 namespace cpp {
-namespace exception {
 
-using keyple::core::util::cpp::exception::Exception;
+/**
+ * Windows-specific utility to stringify PC/SC error codes.
+ * On Linux, pcsc-lite provides pcsc_stringify_error(), but Windows winscard.h
+ * does not. This function formats the error code as a hexadecimal string.
+ */
+inline std::string
+pcsc_stringify_error(uint64_t rv)
+{
+    static char out[20];
+    sprintf_s(out, sizeof(out), "0x%08X", static_cast<unsigned int>(rv));
+    return std::string(out);
+}
 
-class CardTerminalException : public Exception {
-public:
-    /**
-     *
-     */
-    explicit CardTerminalException(const std::string& msg) : Exception(msg) {}
+} // namespace cpp
+} // namespace pcsc
+} // namespace plugin
+} // namespace keyple
 
-    /**
-     *
-     */
-    CardTerminalException(const std::string& msg, const Exception& cause)
-    : Exception(msg, cause) {}
-};
-
-}
-}
-}
-}
-}
+#endif // defined(WIN32) || defined(__MINGW32__) || defined(__MINGW64__)

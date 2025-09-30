@@ -39,6 +39,7 @@ namespace pcsc {
  * See <a href="https://pcscworkgroup.com/">PC/SC Workgroup</a>
  *
  * @since 2.0.0
+ * @deprecated
  */
 class KEYPLEPLUGINPCSC_API PcscSupportedContactlessProtocol {
 public:
@@ -120,10 +121,12 @@ private:
     /**
      * Constructor
      *
+     * @param name The protocol name..
      * @param defaultRule The default rule.
      * @since 2.0.0
      */
-    PcscSupportedContactlessProtocol(const std::string& name, const std::string& defaultRule);
+    PcscSupportedContactlessProtocol(
+        const std::string& name, const std::string& defaultRule);
 };
 
 }

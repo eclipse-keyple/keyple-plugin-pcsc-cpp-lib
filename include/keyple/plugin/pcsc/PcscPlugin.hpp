@@ -34,6 +34,6 @@ public:
     virtual ~PcscPlugin() = default;
 };
 
-}
-}
-}
+} /* namespace pcsc */
+} /* namespace plugin */
+} /* namespace keyple */

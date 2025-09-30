@@ -26,6 +26,7 @@
 #include "keyple/plugin/pcsc/PcscPlugin.hpp"
 #include "keyple/plugin/pcsc/PcscReaderAdapter.hpp"
 #include "keyple/plugin/pcsc/cpp/CardTerminal.hpp"
+#include "keyple/plugin/pcsc/cpp/CardTerminals.hpp"
 
 namespace keyple {
 namespace plugin {
@@ -37,6 +38,7 @@ using keyple::core::util::cpp::Logger;
 using keyple::core::util::cpp::LoggerFactory;
 using keyple::core::util::cpp::Pattern;
 using keyple::plugin::pcsc::cpp::CardTerminal;
+using keyple::plugin::pcsc::cpp::CardTerminals;
 
 class PcscReaderAdapter;
 
@@ -214,6 +216,11 @@ private:
      *
      */
     std::map<std::string, std::string> mProtocolRulesMap;
+
+    /**
+     *
+     */
+    std::shared_ptr<CardTerminals> mTerminals;
 
     /**
      *
