@@ -257,7 +257,7 @@ PcscReaderAdapter::closePhysicalChannel()
 void PcscReaderAdapter::disconnect()
 {
     try {
-        if (!mCard) {
+        if (mCard != nullptr) {
             /* Disconnect using the extended mode allowing UNPOWER. */
             mCard->disconnect(getDisposition(mDisconnectionMode));
             /* Reset the reader state to avoid bad card detection next time. */
