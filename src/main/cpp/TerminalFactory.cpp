@@ -112,10 +112,13 @@ TerminalFactory::listTerminals()
 std::shared_ptr<CardTerminals>
 TerminalFactory::terminals()
 {
+    LONG ret = SCardEstablishContext(SCARD_SCOPE_USER, NULL, NULL, &mContext);
+    if (ret != SCARD_S_SUCCESS) {
+        throw CardTerminalException(pcsc_stringify_error(ret));
+    }
+
     return std::make_shared<CardTerminals>(mContext);
 }
-
-
 
 } /* namespace cpp */
 } /* namespace pcsc */
