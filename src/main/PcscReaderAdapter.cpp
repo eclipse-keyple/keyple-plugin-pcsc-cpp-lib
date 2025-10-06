@@ -65,8 +65,8 @@ PcscReaderAdapter::PcscReaderAdapter(
 , mIsModeExclusive(false)
 , mLoopWaitCard(false)
 , mLoopWaitCardRemoval(false)
-, mIsObservationActive(false)
 , mDisconnectionMode(keyple::plugin::pcsc::PcscReader::DisconnectionMode::RESET)
+, mIsObservationActive(false)
 {
 #if defined(WIN32) || defined(__MINGW32__) || defined(__MINGW64__)
     mIsWindows = true;
