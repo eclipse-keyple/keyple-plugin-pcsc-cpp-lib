@@ -338,6 +338,7 @@ PcscReaderAdapter::closePhysicalChannelSafely()
 void
 PcscReaderAdapter::resetContext()
 {
+    mCard = nullptr;
     mIsPhysicalChannelOpen = false;
 }
 
