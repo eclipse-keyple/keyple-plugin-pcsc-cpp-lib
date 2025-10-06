@@ -13,8 +13,8 @@
 
 #include "keyple/plugin/pcsc/cpp/Card.hpp"
 
+#include "keyple/plugin/pcsc/cpp/PcscUtils.hpp"
 #include "keyple/plugin/pcsc/cpp/exception/CardException.hpp"
-#include "PcscUtils.hpp"
 
 namespace keyple {
 namespace plugin {
@@ -22,10 +22,6 @@ namespace pcsc {
 namespace cpp {
 
 using keyple::plugin::pcsc::cpp::exception::CardException;
-
-#ifdef WIN32
-using keyple::plugin::pcsc::cpp::internal::pcsc_stringify_error;
-#endif
 
 Card::Card(
   const std::shared_ptr<CardTerminal> cardTerminal,

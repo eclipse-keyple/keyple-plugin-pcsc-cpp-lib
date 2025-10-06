@@ -18,14 +18,7 @@
 #include <vector>
 
 #include "keyple/plugin/pcsc/cpp/exception/CardTerminalException.hpp"
-#include "PcscUtils.hpp"
-
-#if defined(WIN32) || defined(__MINGW32__) || defined(__MINGW64__)
-#include <winscard.h>
-#else
-#include <PCSC/wintypes.h>
-#include <PCSC/winscard.h>
-#endif
+#include "keyple/plugin/pcsc/cpp/PcscUtils.hpp"
 
 namespace keyple {
 namespace plugin {
@@ -33,10 +26,6 @@ namespace pcsc {
 namespace cpp {
 
 using keyple::plugin::pcsc::cpp::exception::CardTerminalException;
-
-#ifdef WIN32
-using keyple::plugin::pcsc::cpp::internal::pcsc_stringify_error;
-#endif
 
 std::shared_ptr<TerminalFactory> TerminalFactory::mInstance;
 

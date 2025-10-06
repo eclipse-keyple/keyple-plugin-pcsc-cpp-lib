@@ -24,10 +24,11 @@
 #include "keyple/core/util/cpp/exception/IllegalArgumentException.hpp"
 #include "keyple/core/util/cpp/exception/RuntimeException.hpp"
 #include "keyple/plugin/pcsc/cpp/CardTerminals.hpp"
+#include "keyple/plugin/pcsc/cpp/PcscUtils.hpp"
 #include "keyple/plugin/pcsc/cpp/exception/CardException.hpp"
 #include "keyple/plugin/pcsc/cpp/exception/CardNotPresentException.hpp"
 #include "keyple/plugin/pcsc/cpp/exception/CardTerminalException.hpp"
-#include "PcscUtils.hpp"
+
 
 namespace keyple {
 namespace plugin {
@@ -44,10 +45,6 @@ using keyple::plugin::pcsc::cpp::exception::CardNotPresentException;
 using keyple::plugin::pcsc::cpp::exception::CardTerminalException;
 
 using DisconnectionMode = PcscReader::DisconnectionMode;
-
-#ifdef WIN32
-using keyple::plugin::pcsc::cpp::internal::pcsc_stringify_error;
-#endif
 
 CardTerminal::CardTerminal(
   const std::shared_ptr<CardTerminals> cardTerminals

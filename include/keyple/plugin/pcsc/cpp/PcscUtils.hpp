@@ -39,15 +39,18 @@ namespace internal {
 
 /**
  * Windows-specific utility to stringify PC/SC error codes.
- * On Linux, pcsc-lite provides pcsc_stringify_error(), but Windows winscard.h does not.
- * This function formats the error code as a hexadecimal string.
+ * On Linux, pcsc-lite provides pcsc_stringify_error(), but Windows winscard.h
+ * does not. This function formats the error code as a hexadecimal string.
  */
-inline std::string pcsc_stringify_error(uint64_t rv)
+#if defined(WIN32) || defined(__MINGW32__) || defined(__MINGW64__)
+inline std::string
+pcsc_stringify_error(uint64_t rv)
 {
     static char out[20];
     sprintf_s(out, sizeof(out), "0x%08X", static_cast<unsigned int>(rv));
     return std::string(out);
 }
+#endif
 
 } // namespace internal
 } // namespace cpp
