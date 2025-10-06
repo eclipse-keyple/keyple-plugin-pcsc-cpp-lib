@@ -13,7 +13,8 @@
 
 #include "keyple/plugin/pcsc/cpp/Card.hpp"
 
-#include "keyple/plugin/pcsc/cpp/PcscUtils.hpp"
+#include "PcscUtils.hpp"
+
 #include "keyple/plugin/pcsc/cpp/exception/CardException.hpp"
 
 namespace keyple {

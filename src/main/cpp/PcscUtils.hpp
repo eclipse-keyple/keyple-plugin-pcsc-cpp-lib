@@ -13,18 +13,13 @@
 
 #pragma once
 
-#ifdef WIN32
+#if defined(WIN32) || defined(__MINGW32__) || defined(__MINGW64__)
 
 #include <string>
 #include <cstdint>
 #include <cstdio>
 
-#if defined(WIN32) || defined(__MINGW32__) || defined(__MINGW64__)
 #include <winscard.h>
-#else
-#include <PCSC/wintypes.h>
-#include <PCSC/winscard.h>
-#endif
 
 // SCARD_PROTOCOL_ANY is not defined in Windows winscard.h
 #ifndef SCARD_PROTOCOL_ANY
@@ -35,14 +30,12 @@ namespace keyple {
 namespace plugin {
 namespace pcsc {
 namespace cpp {
-namespace internal {
 
 /**
  * Windows-specific utility to stringify PC/SC error codes.
  * On Linux, pcsc-lite provides pcsc_stringify_error(), but Windows winscard.h
  * does not. This function formats the error code as a hexadecimal string.
  */
-#if defined(WIN32) || defined(__MINGW32__) || defined(__MINGW64__)
 inline std::string
 pcsc_stringify_error(uint64_t rv)
 {
@@ -50,12 +43,10 @@ pcsc_stringify_error(uint64_t rv)
     sprintf_s(out, sizeof(out), "0x%08X", static_cast<unsigned int>(rv));
     return std::string(out);
 }
-#endif
 
-} // namespace internal
 } // namespace cpp
 } // namespace pcsc
 } // namespace plugin
 } // namespace keyple
 
-#endif // WIN32
+#endif // defined(WIN32) || defined(__MINGW32__) || defined(__MINGW64__)

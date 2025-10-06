@@ -13,10 +13,11 @@
 
 #include "keyple/plugin/pcsc/cpp/CardChannel.hpp"
 
+#include "PcscUtils.hpp"
+
 #include "keyple/core/util/cpp/KeypleStd.hpp"
 #include "keyple/core/util/cpp/exception/IllegalArgumentException.hpp"
 #include "keyple/plugin/pcsc/cpp/Card.hpp"
-#include "keyple/plugin/pcsc/cpp/PcscUtils.hpp"
 #include "keyple/plugin/pcsc/cpp/exception/CardTerminalException.hpp"
 
 namespace keyple {

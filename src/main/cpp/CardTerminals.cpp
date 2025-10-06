@@ -17,8 +17,9 @@
 #include <cstring>
 #include <string>
 
+#include "PcscUtils.hpp"
+
 #include "keyple/core/util/cpp/exception/IllegalArgumentException.hpp"
-#include "keyple/plugin/pcsc/cpp/PcscUtils.hpp"
 #include "keyple/plugin/pcsc/cpp/exception/CardException.hpp"
 #include "keyple/plugin/pcsc/cpp/exception/CardTerminalException.hpp"
 

@@ -17,8 +17,9 @@
 #include <cstring>
 #include <vector>
 
+#include "PcscUtils.hpp"
+
 #include "keyple/plugin/pcsc/cpp/exception/CardTerminalException.hpp"
-#include "keyple/plugin/pcsc/cpp/PcscUtils.hpp"
 
 namespace keyple {
 namespace plugin {
