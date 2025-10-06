@@ -27,6 +27,7 @@
 #include "keyple/core/util/cpp/exception/IllegalArgumentException.hpp"
 #include "keyple/plugin/pcsc/cpp/exception/CardException.hpp"
 #include "keyple/plugin/pcsc/cpp/exception/CardTerminalException.hpp"
+#include "PcscUtils.hpp"
 
 namespace keyple {
 namespace plugin {
@@ -38,14 +39,7 @@ using keyple::plugin::pcsc::cpp::exception::CardException;
 using keyple::plugin::pcsc::cpp::exception::CardTerminalException;
 
 #ifdef WIN32
-std::string
-pcsc_stringify_error(uint64_t rv)
-{
-    static char out[20];
-    sprintf_s(out, sizeof(out), "0x%08X", static_cast<unsigned int>(rv));
-
-    return std::string(out);
-}
+using keyple::plugin::pcsc::cpp::internal::pcsc_stringify_error;
 #endif
 CardTerminals::CardTerminals(SCARDCONTEXT& context)
 : mContext(context)
@@ -76,7 +70,7 @@ CardTerminals::waitForChange(long timeout)
     }
 
     LONG rv = SCardGetStatusChange(
-        mContext, timeout, mKnownReaders.data(), mKnownReaders.size());
+        mContext, timeout, mKnownReaders.data(), static_cast<DWORD>(mKnownReaders.size()));
     if (rv == SCARD_E_TIMEOUT) {
         return false;
     }

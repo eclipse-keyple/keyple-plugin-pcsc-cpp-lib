@@ -18,6 +18,7 @@
 #include <vector>
 
 #include "keyple/plugin/pcsc/cpp/exception/CardTerminalException.hpp"
+#include "PcscUtils.hpp"
 
 #if defined(WIN32) || defined(__MINGW32__) || defined(__MINGW64__)
 #include <winscard.h>
@@ -34,14 +35,7 @@ namespace cpp {
 using keyple::plugin::pcsc::cpp::exception::CardTerminalException;
 
 #ifdef WIN32
-std::string
-pcsc_stringify_error(uint64_t rv)
-{
-    static char out[20];
-    sprintf_s(out, sizeof(out), "0x%08X", static_cast<unsigned int>(rv));
-
-    return std::string(out);
-}
+using keyple::plugin::pcsc::cpp::internal::pcsc_stringify_error;
 #endif
 
 std::shared_ptr<TerminalFactory> TerminalFactory::mInstance;

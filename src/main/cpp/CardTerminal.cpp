@@ -27,6 +27,7 @@
 #include "keyple/plugin/pcsc/cpp/exception/CardException.hpp"
 #include "keyple/plugin/pcsc/cpp/exception/CardNotPresentException.hpp"
 #include "keyple/plugin/pcsc/cpp/exception/CardTerminalException.hpp"
+#include "PcscUtils.hpp"
 
 namespace keyple {
 namespace plugin {
@@ -45,14 +46,7 @@ using keyple::plugin::pcsc::cpp::exception::CardTerminalException;
 using DisconnectionMode = PcscReader::DisconnectionMode;
 
 #ifdef WIN32
-std::string
-pcsc_stringify_error(uint64_t rv)
-{
-    static char out[20];
-    sprintf_s(out, sizeof(out), "0x%08X", static_cast<unsigned int>(rv));
-
-    return std::string(out);
-}
+using keyple::plugin::pcsc::cpp::internal::pcsc_stringify_error;
 #endif
 
 CardTerminal::CardTerminal(
