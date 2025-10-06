@@ -110,10 +110,7 @@ CardTerminal::connect(const std::string& protocol)
         &handle,
         &dwProtocol);
 
-    switch (rv) {
-    case SCARD_S_SUCCESS:
-        {
-
+    if (rv == SCARD_S_SUCCESS) {
         switch (dwProtocol) {
         case SCARD_PROTOCOL_T0:
             ioRequest = *SCARD_PCI_T0;
@@ -141,10 +138,9 @@ CardTerminal::connect(const std::string& protocol)
 
         return std::make_shared<Card>(
             shared_from_this(), handle, atr, dwProtocol, ioRequest);
-        }
-    case SCARD_W_REMOVED_CARD:
+    } else if (rv == static_cast<LONG>(SCARD_W_REMOVED_CARD)) {
         throw CardNotPresentException("Card not present.");
-    default:
+    } else {
         throw RuntimeException("Should not reach here.");
     }
 }

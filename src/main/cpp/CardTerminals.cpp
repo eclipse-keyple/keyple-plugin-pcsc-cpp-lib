@@ -71,7 +71,7 @@ CardTerminals::waitForChange(long timeout)
 
     LONG rv = SCardGetStatusChange(
         mContext, timeout, mKnownReaders.data(), static_cast<DWORD>(mKnownReaders.size()));
-    if (rv == SCARD_E_TIMEOUT) {
+    if (rv == static_cast<LONG>(SCARD_E_TIMEOUT)) {
         return false;
     }
 

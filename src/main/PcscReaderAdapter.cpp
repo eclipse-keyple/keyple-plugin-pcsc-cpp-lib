@@ -63,9 +63,9 @@ PcscReaderAdapter::PcscReaderAdapter(
 , mIsContactless(false)
 , mProtocol(IsoProtocol::ANY.getValue())
 , mIsModeExclusive(false)
+, mDisconnectionMode(keyple::plugin::pcsc::PcscReader::DisconnectionMode::RESET)
 , mLoopWaitCard(false)
 , mLoopWaitCardRemoval(false)
-, mDisconnectionMode(keyple::plugin::pcsc::PcscReader::DisconnectionMode::RESET)
 , mIsObservationActive(false)
 {
 #if defined(WIN32) || defined(__MINGW32__) || defined(__MINGW64__)
