@@ -432,7 +432,7 @@ PcscReaderAdapter::stopCardPresenceMonitoringDuringProcessing()
 void
 PcscReaderAdapter::waitForCardRemoval()
 {
-    mLogger->trace("Reader [%]: start waiting card removal\n\n", mName);
+    mLogger->trace("Reader [%]: start waiting card removal\n", mName);
 
     mLoopWaitCardRemoval = true;
 
@@ -460,7 +460,7 @@ PcscReaderAdapter::waitForCardRemoval()
     if (!mLoopWaitCardRemoval) {
         mLogger->trace("Reader [%]: waiting card removal stopped\n", mName);
     } else {
-        mLogger->trace("Reader [%]: card removed", mName);
+        mLogger->trace("Reader [%]: card removed\n", mName);
     }
 
     if (!mLoopWaitCardRemoval) {
