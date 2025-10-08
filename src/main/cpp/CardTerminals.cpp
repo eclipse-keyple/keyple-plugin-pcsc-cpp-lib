@@ -17,12 +17,7 @@
 #include <cstring>
 #include <string>
 
-#if defined(WIN32) || defined(__MINGW32__) || defined(__MINGW64__)
-#include <winscard.h>
-#else
-#include <PCSC/wintypes.h>
-#include <PCSC/winscard.h>
-#endif
+#include "PcscUtils.hpp"
 
 #include "keyple/core/util/cpp/exception/IllegalArgumentException.hpp"
 #include "keyple/plugin/pcsc/cpp/exception/CardException.hpp"
@@ -37,16 +32,6 @@ using keyple::core::util::cpp::exception::IllegalArgumentException;
 using keyple::plugin::pcsc::cpp::exception::CardException;
 using keyple::plugin::pcsc::cpp::exception::CardTerminalException;
 
-#ifdef WIN32
-std::string
-pcsc_stringify_error(uint64_t rv)
-{
-    static char out[20];
-    sprintf_s(out, sizeof(out), "0x%08X", static_cast<unsigned int>(rv));
-
-    return std::string(out);
-}
-#endif
 CardTerminals::CardTerminals(SCARDCONTEXT& context)
 : mContext(context)
 {
@@ -76,8 +61,8 @@ CardTerminals::waitForChange(long timeout)
     }
 
     LONG rv = SCardGetStatusChange(
-        mContext, timeout, mKnownReaders.data(), mKnownReaders.size());
-    if (rv == SCARD_E_TIMEOUT) {
+        mContext, timeout, mKnownReaders.data(), static_cast<DWORD>(mKnownReaders.size()));
+    if (rv == static_cast<LONG>(SCARD_E_TIMEOUT)) {
         return false;
     }
 

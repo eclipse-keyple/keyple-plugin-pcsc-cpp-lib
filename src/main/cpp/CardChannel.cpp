@@ -13,12 +13,7 @@
 
 #include "keyple/plugin/pcsc/cpp/CardChannel.hpp"
 
-#if defined(WIN32) || defined(__MINGW32__) || defined(__MINGW64__)
-#include <winscard.h>
-#else
-#include <PCSC/wintypes.h>
-#include <PCSC/winscard.h>
-#endif
+#include "PcscUtils.hpp"
 
 #include "keyple/core/util/cpp/KeypleStd.hpp"
 #include "keyple/core/util/cpp/exception/IllegalArgumentException.hpp"
@@ -33,17 +28,6 @@ namespace cpp {
 using keyple::core::util::cpp::exception::IllegalArgumentException;
 using keyple::plugin::pcsc::cpp::exception::CardTerminalException;
 
-#ifdef WIN32
-std::string
-pcsc_stringify_error(uint64_t rv)
-{
-    static char out[20];
-    sprintf_s(out, sizeof(out), "0x%08X", static_cast<unsigned int>(rv));
-
-    return std::string(out);
-}
-#endif
-
 CardChannel::CardChannel(const std::shared_ptr<Card> card, const int channel)
 : mChannel(channel)
 , mIsClosed(true)
@@ -57,7 +41,6 @@ CardChannel::getCard() const
 {
     return mCard;
 }
-
 
 std::vector<uint8_t>
 CardChannel::transmit(const std::vector<uint8_t>& apduIn)

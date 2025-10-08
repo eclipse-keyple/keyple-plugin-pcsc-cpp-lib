@@ -63,6 +63,7 @@ PcscReaderAdapter::PcscReaderAdapter(
 , mIsContactless(false)
 , mProtocol(IsoProtocol::ANY.getValue())
 , mIsModeExclusive(false)
+, mDisconnectionMode(keyple::plugin::pcsc::PcscReader::DisconnectionMode::RESET)
 , mLoopWaitCard(false)
 , mLoopWaitCardRemoval(false)
 , mIsObservationActive(false)
@@ -337,6 +338,7 @@ PcscReaderAdapter::closePhysicalChannelSafely()
 void
 PcscReaderAdapter::resetContext()
 {
+    mCard = nullptr;
     mIsPhysicalChannelOpen = false;
 }
 

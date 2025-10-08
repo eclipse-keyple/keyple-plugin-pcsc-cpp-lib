@@ -17,6 +17,8 @@
 #include <cstdint>
 #include <string>
 
+#include "PcscUtils.hpp"
+
 #include "keyple/core/util/cpp/KeypleStd.hpp"
 #include "keyple/core/util/cpp/StringUtils.hpp"
 #include "keyple/core/util/cpp/System.hpp"
@@ -27,6 +29,7 @@
 #include "keyple/plugin/pcsc/cpp/exception/CardException.hpp"
 #include "keyple/plugin/pcsc/cpp/exception/CardNotPresentException.hpp"
 #include "keyple/plugin/pcsc/cpp/exception/CardTerminalException.hpp"
+
 
 namespace keyple {
 namespace plugin {
@@ -43,17 +46,6 @@ using keyple::plugin::pcsc::cpp::exception::CardNotPresentException;
 using keyple::plugin::pcsc::cpp::exception::CardTerminalException;
 
 using DisconnectionMode = PcscReader::DisconnectionMode;
-
-#ifdef WIN32
-std::string
-pcsc_stringify_error(uint64_t rv)
-{
-    static char out[20];
-    sprintf_s(out, sizeof(out), "0x%08X", static_cast<unsigned int>(rv));
-
-    return std::string(out);
-}
-#endif
 
 CardTerminal::CardTerminal(
   const std::shared_ptr<CardTerminals> cardTerminals
@@ -116,10 +108,7 @@ CardTerminal::connect(const std::string& protocol)
         &handle,
         &dwProtocol);
 
-    switch (rv) {
-    case SCARD_S_SUCCESS:
-        {
-
+    if (rv == SCARD_S_SUCCESS) {
         switch (dwProtocol) {
         case SCARD_PROTOCOL_T0:
             ioRequest = *SCARD_PCI_T0;
@@ -147,10 +136,9 @@ CardTerminal::connect(const std::string& protocol)
 
         return std::make_shared<Card>(
             shared_from_this(), handle, atr, dwProtocol, ioRequest);
-        }
-    case SCARD_W_REMOVED_CARD:
+    } else if (rv == static_cast<LONG>(SCARD_W_REMOVED_CARD)) {
         throw CardNotPresentException("Card not present.");
-    default:
+    } else {
         throw RuntimeException("Should not reach here.");
     }
 }
