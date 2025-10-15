@@ -32,6 +32,7 @@
 #include "keyple/plugin/pcsc/PcscPluginAdapter.hpp"
 #include "keyple/plugin/pcsc/cpp/exception/CardException.hpp"
 #include "keyple/plugin/pcsc/cpp/exception/CardNotPresentException.hpp"
+#include "keyple/plugin/pcsc/cpp/exception/CardTerminalException.hpp"
 
 namespace keyple {
 namespace plugin {
@@ -48,6 +49,7 @@ using keyple::core::util::cpp::exception::IllegalStateException;
 using keyple::core::util::cpp::exception::InterruptedException;
 using keyple::plugin::pcsc::cpp::exception::CardException;
 using keyple::plugin::pcsc::cpp::exception::CardNotPresentException;
+using keyple::plugin::pcsc::cpp::exception::CardTerminalException;
 
 PcscReaderAdapter::PcscReaderAdapter(
     std::shared_ptr<CardTerminal> terminal,
@@ -374,6 +376,11 @@ PcscReaderAdapter::transmitApdu(const std::vector<uint8_t>& apduCommandData)
                     getName() + ":" + e.getMessage(),
                     std::make_shared<CardException>(e));
             }
+
+        } catch (const CardTerminalException& e) {
+            throw CardIOException(
+                getName() + ":" + e.getMessage(),
+                std::make_shared<CardTerminalException>(e));
 
         } catch (const IllegalStateException& e) {
             /* Card could have been removed prematurely */
