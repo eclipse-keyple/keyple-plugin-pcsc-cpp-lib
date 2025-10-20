@@ -18,7 +18,7 @@
 #include "keyple/core/util/cpp/KeypleStd.hpp"
 #include "keyple/core/util/cpp/exception/IllegalArgumentException.hpp"
 #include "keyple/plugin/pcsc/cpp/Card.hpp"
-#include "keyple/plugin/pcsc/cpp/exception/CardTerminalException.hpp"
+#include "keyple/plugin/pcsc/cpp/exception/CardException.hpp"
 
 namespace keyple {
 namespace plugin {
@@ -26,7 +26,7 @@ namespace pcsc {
 namespace cpp {
 
 using keyple::core::util::cpp::exception::IllegalArgumentException;
-using keyple::plugin::pcsc::cpp::exception::CardTerminalException;
+using keyple::plugin::pcsc::cpp::exception::CardException;
 
 CardChannel::CardChannel(const std::shared_ptr<Card> card, const int channel)
 : mChannel(channel)
@@ -64,7 +64,7 @@ CardChannel::transmit(const std::vector<uint8_t>& apduIn)
     bool t1 = mCard->mProtocol == SCARD_PROTOCOL_T1;
 
     if (t0 && (n >= 7) && (_apduIn[4] == 0))
-        throw CardTerminalException("Extended len. not supported for T=0");
+        throw IllegalArgumentException("Extended len. not supported for T=0");
 
     if ((t0 || t1) && (n >= 7)) {
         int lc = _apduIn[4] & 0xff;
@@ -86,7 +86,7 @@ CardChannel::transmit(const std::vector<uint8_t>& apduIn)
 
     while (true) {
         if (++k >= 32) {
-            throw CardTerminalException("Could not obtain response");
+            throw CardException("Could not obtain response");
         }
 
         char r_apdu[261];
@@ -107,7 +107,7 @@ CardChannel::transmit(const std::vector<uint8_t>& apduIn)
             mLogger->error(
                 "SCardTransmit failed with error: %\n",
                 std::string(pcsc_stringify_error(rv)));
-            throw CardTerminalException("ScardTransmit failed");
+            throw CardException("ScardTransmit failed");
         }
 
         std::vector<uint8_t> response(r_apdu, r_apdu + dwRecv);

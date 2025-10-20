@@ -146,10 +146,15 @@ CardTerminal::connect(const std::string& protocol)
 bool
 CardTerminal::isCardPresent()
 {
-    SCARD_READERSTATE rgReaderStates[1];
+    SCARD_READERSTATE rgReaderStates[1] = { 0 };
     rgReaderStates[0].szReader = mName.c_str();
 
-    SCardGetStatusChange(mCardTerminals->mContext, 0, rgReaderStates, 1);
+    LONG result
+        = SCardGetStatusChange(mCardTerminals->mContext, 0, rgReaderStates, 1);
+    if (result != SCARD_S_SUCCESS) {
+        throw CardTerminalException(
+            "Failed to get reader status: error " + std::to_string(result));
+    }
 
 	return 0 != (rgReaderStates[0].dwEventState & SCARD_STATE_PRESENT);
 }

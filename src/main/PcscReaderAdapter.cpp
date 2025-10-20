@@ -31,6 +31,7 @@
 #include "keyple/core/util/cpp/exception/InterruptedException.hpp"
 #include "keyple/plugin/pcsc/PcscPluginAdapter.hpp"
 #include "keyple/plugin/pcsc/cpp/exception/CardException.hpp"
+#include "keyple/plugin/pcsc/cpp/exception/CardTerminalException.hpp"
 #include "keyple/plugin/pcsc/cpp/exception/CardNotPresentException.hpp"
 
 namespace keyple {
@@ -47,6 +48,7 @@ using keyple::core::util::cpp::exception::IllegalArgumentException;
 using keyple::core::util::cpp::exception::IllegalStateException;
 using keyple::core::util::cpp::exception::InterruptedException;
 using keyple::plugin::pcsc::cpp::exception::CardException;
+using keyple::plugin::pcsc::cpp::exception::CardTerminalException;
 using keyple::plugin::pcsc::cpp::exception::CardNotPresentException;
 
 PcscReaderAdapter::PcscReaderAdapter(
@@ -107,6 +109,13 @@ PcscReaderAdapter::waitForCardInsertion()
         throw ReaderIOException(
             mName + ": an error occurred while waitœing for a card insertion.",
             std::make_shared<CardException>(e));
+    }
+    catch (const CardTerminalException& e)
+    {
+        /* Here, it is a communication failure with the reader */
+        throw ReaderIOException(
+            mName + ": an error occurred while waitœing for a card insertion.",
+            std::make_shared<CardTerminalException>(e));
     }
 
     throw TaskCanceledException(
