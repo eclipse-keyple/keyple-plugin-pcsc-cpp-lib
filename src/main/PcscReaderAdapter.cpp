@@ -32,7 +32,6 @@
 #include "keyple/plugin/pcsc/PcscPluginAdapter.hpp"
 #include "keyple/plugin/pcsc/cpp/exception/CardException.hpp"
 #include "keyple/plugin/pcsc/cpp/exception/CardNotPresentException.hpp"
-#include "keyple/plugin/pcsc/cpp/exception/CardTerminalException.hpp"
 
 namespace keyple {
 namespace plugin {
@@ -49,7 +48,6 @@ using keyple::core::util::cpp::exception::IllegalStateException;
 using keyple::core::util::cpp::exception::InterruptedException;
 using keyple::plugin::pcsc::cpp::exception::CardException;
 using keyple::plugin::pcsc::cpp::exception::CardNotPresentException;
-using keyple::plugin::pcsc::cpp::exception::CardTerminalException;
 
 PcscReaderAdapter::PcscReaderAdapter(
     std::shared_ptr<CardTerminal> terminal,
@@ -238,6 +236,10 @@ PcscReaderAdapter::openPhysicalChannel()
 
         mChannel = mCard->getBasicChannel();
 
+    } catch (const CardNotPresentException& e) {
+        throw CardIOException(
+            "Card removed", std::make_shared<CardNotPresentException>(e));
+
     } catch (const CardException& e) {
         throw ReaderIOException(
             getName() + ": Error while opening Physical Channel",
@@ -266,6 +268,10 @@ void PcscReaderAdapter::disconnect()
             /* Reset the reader state to avoid bad card detection next time. */
             resetReaderState();
         }
+
+    } catch (const CardNotPresentException& e) {
+        throw CardIOException(
+            "Card removed", std::make_shared<CardNotPresentException>(e));
 
     } catch (const CardException& e) {
         throw ReaderIOException(
@@ -365,22 +371,9 @@ PcscReaderAdapter::transmitApdu(const std::vector<uint8_t>& apduCommandData)
                 std::make_shared<CardNotPresentException>(e));
 
         } catch (const CardException& e) {
-            if (e.getMessage().find("CARD") != std::string::npos ||
-                e.getMessage().find("NOT_TRANSACTED") != std::string::npos ||
-                e.getMessage().find("INVALID_ATR") != std::string::npos) {
-                throw CardIOException(
-                    getName() + ":" + e.getMessage(),
-                    std::make_shared<CardException>(e));
-            } else {
-                throw ReaderIOException(
-                    getName() + ":" + e.getMessage(),
-                    std::make_shared<CardException>(e));
-            }
-
-        } catch (const CardTerminalException& e) {
             throw CardIOException(
                 getName() + ":" + e.getMessage(),
-                std::make_shared<CardTerminalException>(e));
+                std::make_shared<CardException>(e));
 
         } catch (const IllegalStateException& e) {
             /* Card could have been removed prematurely */
