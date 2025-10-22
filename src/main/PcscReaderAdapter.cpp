@@ -105,7 +105,7 @@ PcscReaderAdapter::waitForCardInsertion()
     } catch (const CardException& e) {
         /* Here, it is a communication failure with the reader */
         throw ReaderIOException(
-            mName + ": an error occurred while waitœing for a card insertion.",
+            mName + ": an error occurred while waiting for a card insertion.",
             std::make_shared<CardException>(e));
     }
 
@@ -236,6 +236,10 @@ PcscReaderAdapter::openPhysicalChannel()
 
         mChannel = mCard->getBasicChannel();
 
+    } catch (const CardNotPresentException& e) {
+        throw CardIOException(
+            "Card removed", std::make_shared<CardNotPresentException>(e));
+
     } catch (const CardException& e) {
         throw ReaderIOException(
             getName() + ": Error while opening Physical Channel",
@@ -264,6 +268,10 @@ void PcscReaderAdapter::disconnect()
             /* Reset the reader state to avoid bad card detection next time. */
             resetReaderState();
         }
+
+    } catch (const CardNotPresentException& e) {
+        throw CardIOException(
+            "Card removed", std::make_shared<CardNotPresentException>(e));
 
     } catch (const CardException& e) {
         throw ReaderIOException(
