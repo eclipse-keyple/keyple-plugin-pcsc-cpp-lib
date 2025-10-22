@@ -136,8 +136,10 @@ CardTerminal::connect(const std::string& protocol)
 
         return std::make_shared<Card>(
             shared_from_this(), handle, atr, dwProtocol, ioRequest);
+
     } else if (rv == static_cast<LONG>(SCARD_W_REMOVED_CARD)) {
         throw CardNotPresentException("Card not present.");
+
     } else {
         throw RuntimeException("Should not reach here.");
     }
@@ -146,12 +148,20 @@ CardTerminal::connect(const std::string& protocol)
 bool
 CardTerminal::isCardPresent()
 {
-    SCARD_READERSTATE rgReaderStates[1];
-    rgReaderStates[0].szReader = mName.c_str();
+    SCARD_READERSTATE states[1];
+    states[0].szReader = mName.c_str();
 
-    SCardGetStatusChange(mCardTerminals->mContext, 0, rgReaderStates, 1);
+    LONG rv = SCardGetStatusChange(mCardTerminals->mContext, 0, states, 1);
+    if (rv != SCARD_S_SUCCESS) {
+        mLogger->error(
+            "SCardGetStatusChange failed with error: %\n",
+            std::string(pcsc_stringify_error(rv)));
+        throw CardException(
+            "Failed to get reader status: error " +
+            std::string(pcsc_stringify_error(rv)));
+    }
 
-	return 0 != (rgReaderStates[0].dwEventState & SCARD_STATE_PRESENT);
+	return 0 != (states[0].dwEventState & SCARD_STATE_PRESENT);
 }
 
 bool

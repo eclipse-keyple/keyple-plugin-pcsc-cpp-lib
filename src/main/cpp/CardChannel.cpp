@@ -107,7 +107,12 @@ CardChannel::transmit(const std::vector<uint8_t>& apduIn)
             mLogger->error(
                 "SCardTransmit failed with error: %\n",
                 std::string(pcsc_stringify_error(rv)));
-            throw CardException("ScardTransmit failed");
+
+            if (rv == SCARD_W_REMOVED_CARD) {
+                throw CardException("ScardTransmit failed (CARD)");
+            } else {
+                throw CardException("ScardTransmit failed (READER)");
+            }
         }
 
         std::vector<uint8_t> response(r_apdu, r_apdu + dwRecv);
