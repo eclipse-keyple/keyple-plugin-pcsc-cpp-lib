@@ -1,0 +1,23 @@
+/**
+ * @mainpage Keyple Plugin PC/SC C++ Library
+ *
+ * @section overview Overview
+ *
+ * The **Keyple Plugin PC/SC C++ Library** is a Keyple add-on that enables
+ * applications to interact with PC/SC compliant readers, supporting both
+ * contact and contactless smart card readers.
+ *
+ * @section key_features Key Features
+ *
+ * - Support for PC/SC standard readers
+ * - Contact and contactless card communication
+ * - Multiple protocol support (T0, T1, TCL)
+ * - Reader sharing modes (SHARED, EXCLUSIVE)
+ * - Direct control commands for proprietary features
+ *
+ * @section resources Resources
+ *
+ * - **Documentation**: [keyple.org](https://keyple.org)
+ * - **API Documentation**: [docs.keyple.org/keyple-plugin-pcsc-cpp-lib](https://docs.keyple.org/keyple-plugin-cpp-java-lib)
+ * - **Examples**: [github.com/eclipse/keyple-cpp-example](https://github.com/eclipse/keyple-cpp-example)
+ */
