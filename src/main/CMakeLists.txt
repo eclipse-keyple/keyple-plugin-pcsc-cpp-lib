@@ -26,6 +26,7 @@ ADD_LIBRARY(
 
     ${LIBRARY_TYPE}
 
+    ${CMAKE_CURRENT_SOURCE_DIR}/PcscCardCommunicationProtocol.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/PcscPluginAdapter.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/PcscPluginFactoryAdapter.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/PcscPluginFactoryBuilder.cpp
@@ -33,7 +34,11 @@ ADD_LIBRARY(
     ${CMAKE_CURRENT_SOURCE_DIR}/PcscReader.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/PcscSupportedContactProtocol.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/PcscSupportedContactlessProtocol.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/cpp/Card.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/cpp/CardChannel.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/cpp/CardTerminal.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/cpp/CardTerminals.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/cpp/TerminalFactory.cpp
 )
 
 TARGET_INCLUDE_DIRECTORIES(
