@@ -137,12 +137,17 @@ CardTerminal::connect(const std::string& protocol)
         return std::make_shared<Card>(
             shared_from_this(), handle, atr, dwProtocol, ioRequest);
 
-    } else if (rv == static_cast<LONG>(SCARD_W_REMOVED_CARD)
-               || rv == static_cast<LONG>(SCARD_E_NO_SMARTCARD)) {
-        throw CardNotPresentException("Card not present.");
+    } else if (isCardCommunicationError(rv)) {
+        throw CardNotPresentException(
+            "Card not present: error " + std::string(pcsc_stringify_error(rv)));
 
     } else {
-        throw RuntimeException("Should not reach here.");
+        mLogger->error(
+            "SCardConnect failed with error: %\n",
+            std::string(pcsc_stringify_error(rv)));
+        throw CardException(
+            "Failed to connect to card: error " +
+            std::string(pcsc_stringify_error(rv)));
     }
 }
 

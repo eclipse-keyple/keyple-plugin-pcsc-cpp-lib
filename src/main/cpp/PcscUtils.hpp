@@ -44,6 +44,25 @@ pcsc_stringify_error(uint64_t rv)
     return std::string(out);
 }
 
+/**
+ * Checks if a PC/SC return value corresponds to a card communication loss or
+ * card removal rather than a reader hardware breakdown.
+ */
+inline bool
+isCardCommunicationError(uint64_t rv)
+{
+    return rv == static_cast<uint64_t>(SCARD_W_REMOVED_CARD)
+        || rv == static_cast<uint64_t>(SCARD_W_RESET_CARD)
+        || rv == static_cast<uint64_t>(SCARD_W_UNPOWERED_CARD)
+        || rv == static_cast<uint64_t>(SCARD_W_UNRESPONSIVE_CARD)
+        || rv == static_cast<uint64_t>(SCARD_E_NO_SMARTCARD)
+        || rv == static_cast<uint64_t>(SCARD_E_NOT_TRANSACTED)
+        || rv == static_cast<uint64_t>(SCARD_E_COMM_DATA_LOST)
+        /* SCARD_F_INTERNAL_ERROR, commonly returned on a contactless
+         * card tear-off. */
+        || rv == 0x80100001;
+}
+
 } // namespace cpp
 } // namespace pcsc
 } // namespace plugin
