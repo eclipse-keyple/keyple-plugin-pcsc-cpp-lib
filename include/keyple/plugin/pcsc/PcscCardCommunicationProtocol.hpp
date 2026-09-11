@@ -16,6 +16,8 @@
 #include <cstdint>
 #include <string>
 
+#include "keyple/plugin/pcsc/KeyplePluginPcscExport.hpp"
+
 namespace keyple {
 namespace plugin {
 namespace pcsc {
@@ -36,7 +38,7 @@ namespace pcsc {
  *
  * @since 2.5.0
  */
-class PcscCardCommunicationProtocol {
+class KEYPLEPLUGINPCSC_API PcscCardCommunicationProtocol {
 public:
     /**
      * Any ISO 14443-4 compliant card or device (both Type A and Type B).
