@@ -13,13 +13,13 @@
 
 #pragma once
 
-#if defined(WIN32) || defined(__MINGW32__) || defined(__MINGW64__)
-
 #include <string>
 #include <cstdint>
 #include <cstdio>
 
+#if defined(WIN32) || defined(__MINGW32__) || defined(__MINGW64__)
 #include <winscard.h>
+#endif // defined(WIN32) || defined(__MINGW32__) || defined(__MINGW64__)
 
 // SCARD_PROTOCOL_ANY is not defined in Windows winscard.h
 #ifndef SCARD_PROTOCOL_ANY
@@ -31,6 +31,7 @@ namespace plugin {
 namespace pcsc {
 namespace cpp {
 
+#if defined(WIN32) || defined(__MINGW32__) || defined(__MINGW64__)
 /**
  * Windows-specific utility to stringify PC/SC error codes.
  * On Linux, pcsc-lite provides pcsc_stringify_error(), but Windows winscard.h
@@ -84,6 +85,7 @@ pcsc_stringify_error(uint64_t rv)
     return name != nullptr ? std::string(name) + " (" + code + ")"
                            : std::string(code);
 }
+#endif // defined(WIN32) || defined(__MINGW32__) || defined(__MINGW64__)
 
 /**
  * Checks if a PC/SC return value corresponds to a card communication loss or
@@ -108,5 +110,3 @@ isCardCommunicationError(uint64_t rv)
 } // namespace pcsc
 } // namespace plugin
 } // namespace keyple
-
-#endif // defined(WIN32) || defined(__MINGW32__) || defined(__MINGW64__)
