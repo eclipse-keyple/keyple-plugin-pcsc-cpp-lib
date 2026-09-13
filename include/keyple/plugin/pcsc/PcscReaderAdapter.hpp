@@ -25,6 +25,8 @@
 #include "keyple/core/util/cpp/Logger.hpp"
 #include "keyple/core/util/cpp/LoggerFactory.hpp"
 #include "keyple/plugin/pcsc/PcscReader.hpp"
+#include "keyple/plugin/pcsc/cpp/Card.hpp"
+#include "keyple/plugin/pcsc/cpp/CardChannel.hpp"
 #include "keyple/plugin/pcsc/cpp/CardTerminal.hpp"
 
 namespace keyple {
@@ -38,7 +40,11 @@ using keyple::core::plugin::spi::reader::observable::state::processing::CardPres
 using keyple::core::plugin::spi::reader::observable::state::removal::CardRemovalWaiterBlockingSpi;
 using keyple::core::util::cpp::Logger;
 using keyple::core::util::cpp::LoggerFactory;
+using keyple::plugin::pcsc::cpp::Card;
+using keyple::plugin::pcsc::cpp::CardChannel;
 using keyple::plugin::pcsc::cpp::CardTerminal;
+
+using DisconnectionMode = PcscReader::DisconnectionMode;
 
 class PcscPluginAdapter;
 
@@ -68,28 +74,32 @@ public:
      *
      * @since 2.0.0
      */
-    void waitForCardInsertion() override;
+    void
+    waitForCardInsertion() override;
 
     /**
      * {@inheritDoc}
      *
      * @since 2.0.0
      */
-    void stopWaitForCardInsertion() override;
+    void
+    stopWaitForCardInsertion() override;
 
     /**
      * {@inheritDoc}
      *
      * @since 2.0.0
      */
-    bool isProtocolSupported(const std::string& readerProtocol) const final;
+    bool
+    isProtocolSupported(const std::string& readerProtocol) const final;
 
     /**
      * {@inheritDoc}
      *
      * @since 2.0.0
      */
-    void activateProtocol(const std::string& readerProtocol) override;
+    void
+    activateProtocol(const std::string& readerProtocol) override;
 
 
     /**
@@ -97,7 +107,8 @@ public:
      *
      * @since 2.0.0
      */
-    void deactivateProtocol(const std::string& readerProtocol) final;
+    void
+    deactivateProtocol(const std::string& readerProtocol) final;
 
     /**
      * {@inheritDoc}
@@ -105,112 +116,128 @@ public:
      * @throws PatternSyntaxException If the expression's syntax is invalid
      * @since 2.0.0
      */
-    bool isCurrentProtocol(const std::string& readerProtocol) const final;
+    bool
+    isCurrentProtocol(const std::string& readerProtocol) const final;
 
     /**
      * {@inheritDoc}
      *
      * @since 2.0.0
      */
-    void onStartDetection() final;
+    void
+    onStartDetection() final;
 
     /**
      * {@inheritDoc}
      *
      * @since 2.0.0
      */
-    void onStopDetection() final;
+    void
+    onStopDetection() final;
 
     /**
      * {@inheritDoc}
      *
      * @since 2.0.0
      */
-    const std::string& getName() const final;
+    const std::string&
+    getName() const final;
 
     /**
      * {@inheritDoc}
      *
      * @since 2.0.0
      */
-    void openPhysicalChannel() final;
+    void
+    openPhysicalChannel() final;
 
     /**
      * {@inheritDoc}
      *
      * @since 2.0.0
      */
-    void closePhysicalChannel() final;
+    void
+    closePhysicalChannel() final;
 
     /**
      * {@inheritDoc}
      *
      * @since 2.0.0
      */
-    bool isPhysicalChannelOpen() const final;
+    bool
+    isPhysicalChannelOpen() const final;
 
     /**
      * {@inheritDoc}
      *
      * @since 2.0.0
      */
-    bool checkCardPresence() final;
+    bool
+    checkCardPresence() final;
 
     /**
      * {@inheritDoc}
      *
      * @since 2.0.0
      */
-    const std::string getPowerOnData() const final;
+    const std::string
+    getPowerOnData() const final;
 
     /**
      * {@inheritDoc}
      *
      * @since 2.0.0
      */
-    const std::vector<uint8_t> transmitApdu(const std::vector<uint8_t>& apduCommandData) final;
+    const std::vector<uint8_t>
+    transmitApdu(const std::vector<uint8_t>& apduCommandData) final;
 
     /**
      * {@inheritDoc}
      *
      * @since 2.0.0
      */
-    bool isContactless() final;
+    bool
+    isContactless() final;
 
     /**
      * {@inheritDoc}
      *
      * @since 2.0.0
      */
-    void onUnregister() final;
+    void
+    onUnregister() final;
 
     /**
      * {@inheritDoc}
      *
      * @since 2.0.0
      */
-    void monitorCardPresenceDuringProcessing() override;
+    void
+    monitorCardPresenceDuringProcessing() override;
 
     /**
      * {@inheritDoc}
      *
      * @since 2.0.0
      */
-    void stopCardPresenceMonitoringDuringProcessing() override;
+    void
+    stopCardPresenceMonitoringDuringProcessing() override;
 
     /**
      * {@inheritDoc}
      *
      * @since 2.0.0
      */
-    void waitForCardRemoval() final;
+    void
+    waitForCardRemoval() final;
 
     /**
      * {@inheritDoc}
      *
      * @since 2.0.0
      */
-    void stopWaitForCardRemoval() final;
+    void
+    stopWaitForCardRemoval() final;
 
     /**
      * {@inheritDoc}
@@ -219,14 +246,16 @@ public:
      *
      * @since 2.0.0
      */
-    PcscReader& setSharingMode(const SharingMode sharingMode) final;
+    PcscReader&
+    setSharingMode(const SharingMode sharingMode) final;
 
     /**
      * {@inheritDoc}
      *
      * @since 2.0.0
      */
-    PcscReader& setContactless(const bool contactless) final;
+    PcscReader&
+    setContactless(const bool contactless) final;
 
     /**
      * {@inheritDoc}
@@ -235,7 +264,8 @@ public:
      *
      * @since 2.0.0
      */
-    PcscReader& setIsoProtocol(const IsoProtocol& isoProtocol) final;
+    PcscReader&
+    setIsoProtocol(const IsoProtocol& isoProtocol) final;
 
     /**
      * {@inheritDoc}
@@ -244,22 +274,25 @@ public:
      *
      * @since 2.0.0
      */
-    PcscReader& setDisconnectionMode(const DisconnectionMode disconnectionMode) final;
+    PcscReader&
+    setDisconnectionMode(const DisconnectionMode disconnectionMode) final;
 
     /**
      * {@inheritDoc}
      *
      * @since 2.1.0
      */
-    const std::vector<uint8_t> transmitControlCommand(const int commandId,
-                                                        const std::vector<uint8_t>& command) override;
+    const std::vector<uint8_t>
+    transmitControlCommand(
+        const int commandId, const std::vector<uint8_t>& command) override;
 
     /**
      * {@inheritDoc}
      *
      * @since 2.1.0
      */
-    int getIoctlCcidEscapeCommandId() const override;
+    int
+    getIoctlCcidEscapeCommandId() const override;
 
 private:
     /**
@@ -300,6 +333,21 @@ private:
     /**
      *
      */
+    const std::vector<std::uint8_t> mPingApdu;
+
+    /**
+     *
+     */
+    std::shared_ptr<Card> mCard;
+
+    /**
+     *
+     */
+    std::shared_ptr<CardChannel> mChannel;
+
+    /**
+     *
+     */
     bool mIsWindows;
 
     /**
@@ -335,13 +383,74 @@ private:
     /**
      *
      */
-    void closePhysicalChannelSafely();
+    bool mIsObservationActive;
+
 
     /**
      *
      */
-    void resetContext();
+    void
+    closePhysicalChannelSafely();
 
+    /**
+     *
+     */
+    void
+    resetContext();
+
+    /**
+    * Disconnects the current card and resets the context and reader state.
+    *
+    * <p>This method handles the disconnection of a card, taking into account
+    * the specific disconnection mode. If the card is an instance of JnaCard, it
+    * disconnects using the extended mode specified by
+    * getDisposition(DisconnectionMode)} and resets the reader state to avoid
+    * incorrect card detection in subsequent operations. For other card types,
+    * it disconnects using the specified disconnection mode directly.
+    *
+    * <p>If a CardException occurs during the operation, a ReaderIOException is
+    * thrown with the associated error message.
+    *
+    * <p>Once the disconnection is handled, the method ensures that the context
+    * is reset.
+    *
+    * @throw ReaderIOException If an error occurs while closing the physical
+    * channel.
+    */
+    void
+    disconnect();
+
+    /**
+     * Maps a DisconnectionMode to the corresponding SCARD_* constant.
+     *
+     * @param mode The disconnection mode.
+     * @return The corresponding SCARD_* value.
+     */
+    static int getDisposition(const DisconnectionMode mode);
+
+    /**
+    * Resets the state of the card reader.
+    *
+    * <p>This method attempts to reset the reader state based on the current
+    * disconnection mode. If the disconnection mode is set to UNPOWER, it
+    * reconnects to the terminal and then disconnects without powering off the
+    * reader. If any {@link CardException} occurs during this process, it is
+    * handled silently.
+    */
+    void
+    resetReaderState();
+
+    /**
+     *
+     */
+    void
+    waitForCardRemovalByPolling();
+
+    /**
+     *
+     */
+    void
+    waitForCardRemovalStandard();
 };
 
 } /* namespace pcsc */
