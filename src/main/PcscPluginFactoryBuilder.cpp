@@ -63,7 +63,7 @@ Builder::useContactlessReaderIdentificationFilter(
 
     } catch (const Exception& e) {
         throw IllegalArgumentException(
-            "Bad regular expression.", e);
+            "Bad regular expression", e);
     }
 
     return *this;

@@ -242,7 +242,7 @@ public:
     /**
      * {@inheritDoc}
      *
-     * <p>The default value is {@link SharingMode#EXCLUSIVE}.
+     * <p>The default value is {@link SharingMode#SHARED}.
      *
      * @since 2.0.0
      */
@@ -308,12 +308,18 @@ private:
     /**
      *
      */
-    const std::unique_ptr<Logger> mLogger = LoggerFactory::getLogger(typeid(PcscReaderAdapter));
+    const std::unique_ptr<Logger> mLogger =
+      LoggerFactory::getLogger(typeid(PcscReaderAdapter));
 
     /**
-     *
+     * For connect/transmit operations
      */
-    std::shared_ptr<CardTerminal> mTerminal;
+    std::shared_ptr<CardTerminal> mCommunicationTerminal;
+
+    /**
+     * For waitForCardPresent/Absent operations
+     */
+    std::shared_ptr<CardTerminal> mMonitoringTerminal;
 
     /**
      *
@@ -387,6 +393,30 @@ private:
 
 
     /**
+     * Creates a separate CardTerminal instance for monitoring operations
+     * using a dedicated PC/SC context.
+     *
+     * <p>Under Linux with pcsc-lite, sharing the same SCARDCONTEXT between
+     * blocking monitoring calls (waitForCardPresent/Absent) and communication
+     * operations (transmit) can cause thread contention and
+     * SCARD_E_SHARING_VIOLATION errors due to the self-pipe trick mechanism
+     * used for cancellation.
+     *
+     * <p>This method attempts to create a new TerminalFactory instance to
+     * obtain a separate context. If this fails (e.g., on older JRE versions or
+     * with certain security providers), it falls back to using the same
+     * terminal, which may cause issues on Linux but will still work on
+     * Windows.
+     *
+     * @param terminalName The name of the terminal to create a monitoring
+     * instance for.
+     * @return A CardTerminal instance for monitoring, either with a separate
+     * context or the same one.
+     */
+    std::shared_ptr<CardTerminal>
+    createMonitoringTerminal(const std::string& terminalName);
+
+    /**
      *
      */
     void
@@ -402,11 +432,14 @@ private:
     * Disconnects the current card and resets the context and reader state.
     *
     * <p>This method handles the disconnection of a card, taking into account
-    * the specific disconnection mode. If the card is an instance of JnaCard, it
-    * disconnects using the extended mode specified by
-    * getDisposition(DisconnectionMode)} and resets the reader state to avoid
-    * incorrect card detection in subsequent operations. For other card types,
-    * it disconnects using the specified disconnection mode directly.
+    * the specific disconnection mode. If the card uses the INNOVATRON_B_PRIME
+    * protocol, the disconnection mode is unconditionally overridden to
+    * DisconnectionMode::UNPOWER, regardless of the configured mode. If the
+    * card is an instance of JnaCard, it disconnects using the extended mode
+    * specified by getDisposition(DisconnectionMode)} and resets the reader
+    * state to avoid incorrect card detection in subsequent operations. For
+    * other card types, it disconnects using the effective disconnection mode
+    * directly.
     *
     * <p>If a CardException occurs during the operation, a ReaderIOException is
     * thrown with the associated error message.
@@ -431,14 +464,25 @@ private:
     /**
     * Resets the state of the card reader.
     *
-    * <p>This method attempts to reset the reader state based on the current
-    * disconnection mode. If the disconnection mode is set to UNPOWER, it
+    * <p>This method attempts to reset the reader state based on the effective
+    * disconnection mode. If the effective mode is DisconnectionMode::UNPOWER
+    * (either configured or forced by the INNOVATRON_B_PRIME protocol), it
     * reconnects to the terminal and then disconnects without powering off the
     * reader. If any {@link CardException} occurs during this process, it is
     * handled silently.
+    *
+    * @param effectiveMode The disconnection mode actually applied, which may
+    * differ from the configured mDisconnectionMode when the card uses the
+    * INNOVATRON_B_PRIME protocol.
     */
     void
-    resetReaderState();
+    resetReaderState(const DisconnectionMode effectiveMode);
+
+    /**
+     *
+     */
+    void
+    doWaitForCardRemoval(const bool allowPolling);
 
     /**
      *

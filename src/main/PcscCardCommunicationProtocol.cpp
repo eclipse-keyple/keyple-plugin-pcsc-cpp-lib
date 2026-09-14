@@ -26,8 +26,16 @@ const PcscCardCommunicationProtocol
         "INNOVATRON_B_PRIME", "3B8.8001(80)?5A0A.*");
 
 const PcscCardCommunicationProtocol
+    PcscCardCommunicationProtocol::MIFARE_CLASSIC_1K(
+    "MIFARE_CLASSIC_1K", "3B8F8001804F0CA000000306030001.*");
+
+const PcscCardCommunicationProtocol
+    PcscCardCommunicationProtocol::MIFARE_CLASSIC_4K(
+    "MIFARE_CLASSIC_4K", "3B8F8001804F0CA000000306030002.*");
+
+const PcscCardCommunicationProtocol
     PcscCardCommunicationProtocol::MIFARE_ULTRALIGHT(
-        "MIFARE_ULTRALIGHT", "3B8F8001804F0CA0000003060300030.*");
+        "MIFARE_ULTRALIGHT", "3B8F8001804F0CA000000306030003.*");
 
 const PcscCardCommunicationProtocol
     PcscCardCommunicationProtocol::ST25_SRT512(
