@@ -66,6 +66,10 @@ PcscPluginAdapter::PcscPluginAdapter()
          PcscSupportedContactlessProtocol::MIFARE_ULTRA_LIGHT.getDefaultRule()},
         {PcscSupportedContactlessProtocol::MIFARE_CLASSIC.getName(),
          PcscSupportedContactlessProtocol::MIFARE_CLASSIC.getDefaultRule()},
+        {PcscCardCommunicationProtocol::MIFARE_CLASSIC_1K.getName(),
+         PcscCardCommunicationProtocol::MIFARE_CLASSIC_1K.getDefaultRule()},
+        {PcscCardCommunicationProtocol::MIFARE_CLASSIC_4K.getName(),
+         PcscCardCommunicationProtocol::MIFARE_CLASSIC_4K.getDefaultRule()},
         {PcscSupportedContactlessProtocol::MIFARE_DESFIRE.getName(),
          PcscSupportedContactlessProtocol::MIFARE_DESFIRE.getDefaultRule()},
         {PcscCardCommunicationProtocol::ST25_SRT512.getName(),
@@ -113,13 +117,13 @@ PcscPluginAdapter::searchAvailableReaderNames()
 {
     std::vector<std::string> readerNames;
 
-    mLogger->trace("Plugin [%]: search available reader\n", getName());
+    mLogger->trace("Searching available reader names\n");
 
     for (const auto& terminal : getCardTerminalList()) {
         readerNames.push_back(terminal->getName());
     }
 
-    mLogger->trace("Plugin [%]: readers found: %", getName(), readerNames);
+    mLogger->trace("Readers found [names=%]\n", readerNames);
 
     return readerNames;
 }
@@ -135,7 +139,7 @@ PcscPluginAdapter::searchAvailableReaders()
 {
     std::vector<std::shared_ptr<ReaderSpi>> readerSpis;
 
-    mLogger->trace("Plugin [%]: search available readers\n", getName());
+    mLogger->trace("Searching available readers\n");
 
     for (const auto& terminal : getCardTerminalList()) {
         readerSpis.push_back(createReader(terminal));
@@ -143,7 +147,7 @@ PcscPluginAdapter::searchAvailableReaders()
 
     for (const auto& readerSpi : readerSpis) {
         mLogger->trace(
-            "Plugin [%]: reader found: %\n", getName(), readerSpi->getName());
+            "Reader found [name=%]\n", readerSpi->getName());
     }
 
     return readerSpis;
@@ -175,18 +179,18 @@ PcscPluginAdapter::getCardTerminalList()
         const auto msg = e.getMessage();
 
         if (StringUtils::contains(msg, "SCARD_E_NO_READERS_AVAILABLE")) {
-            mLogger->error("Plugin [%]: no reader available\n", getName());
+            mLogger->error("No reader available\n");
 
         } else if (
             StringUtils::contains(msg, "SCARD_E_NO_SERVICE")
             || StringUtils::contains(msg, "SCARD_E_SERVICE_STOPPED")) {
             mLogger->error(
-                "Plugin [%]: no smart card service error\n", getName());
+                "No running smart card service\n");
             mIsCardTerminalsInitialized = false;
 
         } else if (StringUtils::contains(msg, "SCARD_F_COMM_ERROR")) {
             mLogger->error(
-                "Plugin [%]: reader communication error\n", getName());
+                "Reader communication error occurred\n");
 
         } else {
             throw PluginIOException(
@@ -201,7 +205,7 @@ PcscPluginAdapter::getCardTerminalList()
 std::shared_ptr<ReaderSpi>
 PcscPluginAdapter::searchReader(const std::string& readerName)
 {
-    mLogger->trace("Plugin [%]: search reader [%]\n", getName(), readerName);
+    mLogger->trace("Searching reader [reader=%]\n", readerName);
 
     const auto terminals = getCardTerminalList();
     auto it = std::find_if(
@@ -212,11 +216,11 @@ PcscPluginAdapter::searchReader(const std::string& readerName)
         });
 
     if (it != terminals.end()) {
-        mLogger->trace("Plugin [%]: reader found\n", getName());
+        mLogger->trace("Reader found\n");
         return createReader(*it);
     }
 
-    mLogger->trace("Plugin [%]: reader not found\n", getName());
+    mLogger->trace("Reader not found\n");
 
     return nullptr;
 }
@@ -260,13 +264,11 @@ PcscPluginAdapter::addProtocolRulesMap(
 {
     if (!protocolRulesMap.empty()) {
         mLogger->info(
-            "Plugin [%]: add protocol identification rules: %\n",
-            getName(),
+            "Adding protocol identification rules [rules=%]\n",
             protocolRulesMap);
     } else {
         mLogger->info(
-            "Plugin [%]: use default protocol identification rules\n",
-            getName());
+            "Using default protocol identification rules\n");
     }
 
     mProtocolRulesMap.insert(protocolRulesMap.begin(), protocolRulesMap.end());

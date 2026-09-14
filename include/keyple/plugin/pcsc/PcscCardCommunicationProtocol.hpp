@@ -88,6 +88,40 @@ public:
     static const PcscCardCommunicationProtocol INNOVATRON_B_PRIME;
 
     /**
+     * NXP MIFARE Classic 1K technology.
+     *
+     * <p>According to PC/SC Part 3 Supplemental Document:
+     *
+     * <ul>
+     *   <li>Initial bytes: 3B8F8001804F0CA0000003
+     *   <li>Card protocol: 0603 (ISO 14443 A part 3)
+     *   <li>Card type: 0001 (1K variant)
+     * </ul>
+     *
+     * <p>Default rule = <b>{@code 3B8F8001804F0CA000000306030001.*}</b>
+     *
+     * @since 2.6.0
+     */
+    static const PcscCardCommunicationProtocol MIFARE_CLASSIC_1K;
+
+    /**
+     * NXP MIFARE Classic 4K technology.
+     *
+     * <p>According to PC/SC Part 3 Supplemental Document:
+     *
+     * <ul>
+     *   <li>Initial bytes: 3B8F8001804F0CA0000003
+     *   <li>Card protocol: 0603 (ISO 14443 A part 3)
+     *   <li>Card type: 0002 (4K variant)
+     * </ul>
+     *
+     * <p>Default rule = <b>{@code 3B8F8001804F0CA000000306030002.*}</b>
+     *
+     * @since 2.6.0
+     */
+    static const PcscCardCommunicationProtocol MIFARE_CLASSIC_4K;
+
+    /**
      * NXP MIFARE Ultralight technologies.
      *
      * <p>According to PC/SC Part 3 Supplemental Document:
@@ -98,7 +132,7 @@ public:
      *   <li>Card type: 0003 (for Mifare UL)
      * </ul>
      *
-     * <p>Default rule = <b>{@code 3B8F8001804F0CA0000003060300030.*}</b>
+     * <p>Default rule = <b>{@code 3B8F8001804F0CA000000306030003.*}</b>
      *
      * @since 2.5.0
      */
