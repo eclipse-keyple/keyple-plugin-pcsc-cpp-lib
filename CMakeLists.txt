@@ -11,22 +11,11 @@
 #* SPDX-License-Identifier: EPL-2.0                                           *
 #******************************************************************************/
 
-CMAKE_MINIMUM_REQUIRED(VERSION 3.25)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.5)
+
 PROJECT(KeyplePluginPcscCppLib
-        VERSION 2.6.3
+        VERSION 2.6.4
         LANGUAGES C CXX)
-
-SET(CMAKE_PROJECT_VERSION_MAJOR "2")
-SET(CMAKE_PROJECT_VERSION_MINOR "6")
-SET(CMAKE_PROJECT_VERSION_PATCH "3")
-
-SET(CMAKE_PROJECT_VERSION "${CMAKE_PROJECT_VERSION_MAJOR}.
-                           ${CMAKE_PROJECT_VERSION_MINOR}.
-                           ${CMAKE_PROJECT_VERSION_PATCH}")
-
-SET(PACKAGE_NAME "keyple-plugin-pcsc-cpp-lib")
-SET(PACKAGE_VERSION ${CMAKE_PROJECT_VERSION})
-SET(PACKAGE_STRING "${PACKAGE_NAME} ${PACKAGE_VERSION}")
 
 SET(CMAKE_MACOSX_RPATH 1)
 SET(CMAKE_CXX_STANDARD 11)
