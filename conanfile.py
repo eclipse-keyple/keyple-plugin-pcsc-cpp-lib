@@ -9,15 +9,15 @@
 # *****************************************************************************/
 
 import os
+import re
 
 from conan import ConanFile
 from conan.tools.cmake import CMake, CMakeDeps, CMakeToolchain, cmake_layout
-from conan.tools.files import copy
+from conan.tools.files import copy, load
 
 
 class KeyplePluginPcscCppLibConan(ConanFile):
     name = "keyple-plugin-pcsc-cpp-lib"
-    version = "2.6.3"
     license = "EPL-2.0"
     author = "Calypso Networks Association <https://calypsonet.org/>"
     url = "https://github.com/eclipse-keyple/keyple-plugin-pcsc-cpp-lib"
@@ -47,6 +47,11 @@ class KeyplePluginPcscCppLibConan(ConanFile):
         "LICENSE",
         "NOTICE.md"
     ]
+
+    def set_version(self):
+        cmake_lists = load(self, os.path.join(self.recipe_folder, "CMakeLists.txt"))
+        match = re.search(r"VERSION\s+(\d+\.\d+\.\d+)", cmake_lists)
+        self.version = match.group(1)
 
     def config_options(self):
         if self.settings.os == "Windows":
