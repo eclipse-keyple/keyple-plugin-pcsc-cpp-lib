@@ -15,10 +15,10 @@ SET(LIBRARY_NAME keyplepluginpcsccpplib)
 
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DKEYPLEPLUGINPCSC_EXPORT")
 
-# Include deps
-INCLUDE("CMakeLists.txt.keyple-common")
-INCLUDE("CMakeLists.txt.keyple-plugin")
-INCLUDE("CMakeLists.txt.keyple-util")
+# Keyple dependencies are supplied by Conan (requires) via CMakeDeps
+FIND_PACKAGE(keyple-common-cpp-api REQUIRED CONFIG)
+FIND_PACKAGE(keyple-plugin-cpp-api REQUIRED CONFIG)
+FIND_PACKAGE(keyple-util-cpp-lib REQUIRED CONFIG)
 
 ADD_LIBRARY(
 
@@ -85,4 +85,20 @@ ADD_LIBRARY(
     ALIAS
 
     ${LIBRARY_NAME}
+)
+
+INSTALL(
+
+    TARGETS ${LIBRARY_NAME}
+
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+    RUNTIME DESTINATION bin
+)
+
+INSTALL(
+
+    DIRECTORY ${PROJECT_SOURCE_DIR}/include/
+
+    DESTINATION include
 )
